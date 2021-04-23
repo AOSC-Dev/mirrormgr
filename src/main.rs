@@ -1,22 +1,25 @@
 use anyhow::{anyhow, Result};
-use serde_json;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json;
+use serde_yaml::Value;
 use std::fs;
 
 mod cli;
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
-const REPO_DATA_DIR: &str = "/usr/share/distro-repository-data";
+const REPO_MIRROR_FILE: &str = "/usr/share/distro-repository-data/mirrors.yml";
+const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 
 #[derive(Deserialize, Serialize)]
 struct Status {
     branch: String,
     component: Vec<String>,
-    mirror: Vec<String>
+    mirror: String,
 }
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
-    let status = read_status()?;
+    let mut status = read_status()?;
 
     match app.subcommand() {
         ("status", _) => {
@@ -24,9 +27,29 @@ fn main() -> Result<()> {
             for i in status.component {
                 println!("component: {}", i);
             }
-            for i in status.mirror {
-                println!("mirror: {}", i);
+            println!("mirror: {}", status.mirror);
+        }
+        ("set-mirror", Some(args)) => {
+            let url_re = Regex::new(r"/(http|https)://([\w.]+/?)\S*/ig").unwrap();
+            let mirror_options = read_mirrors_option()?;
+            let new_mirror = args.value_of("INPUT").unwrap();
+
+            let mirror_url: &str;
+
+            if let Some(v) = mirror_options.get(new_mirror) {
+                status.mirror = new_mirror.to_string();
+                mirror_url = v.get("url").unwrap().as_str().unwrap();
+            } else if url_re.is_match(new_mirror) {
+                status.mirror = new_mirror.to_string();
+                mirror_url = new_mirror;
+            } else {
+                return Err(anyhow!("mirror or url doesn't available"));
             }
+
+            let mut result =
+                format!("deb {}/debs {}", mirror_url, status.branch);
+            result = format!("{} {}", result, status.component.join(" "));
+            apply_config(&status, result)?;
         }
         _ => {
             unreachable!()
@@ -40,4 +63,17 @@ fn read_status() -> Result<Status> {
     let status: Status = serde_json::from_slice(&status)?;
 
     Ok(status)
+}
+
+fn read_mirrors_option() -> Result<Value> {
+    let mirrors_data = fs::read(REPO_MIRROR_FILE.to_string())?;
+    let mirrors_data = serde_yaml::from_slice(&mirrors_data)?;
+
+    Ok(mirrors_data)
+}
+
+fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
+    fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
+    fs::write(APT_SOURCE_FILE, source_list_str)?;
+    Ok(())
 }

@@ -15,20 +15,21 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Add the input branch name to use")
-                        .min_values(1),
+                        .max_values(1),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("set-branch-to-default")
-                .about("Set source.list branch to default")
-        )
-        .subcommand(
-            SubCommand::with_name("add-mirror")
+            SubCommand::with_name("set-mirror")
                 .about("Set the APT source mirror")
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Add source.list mirror")
+                        .max_values(1),
                 ),
+        )
+        .subcommand(
+            SubCommand::with_name("set-mirror-to-default")
+                .about("Set the APT source mirror to default")
         )
         .subcommand(
             SubCommand::with_name("remove-mirror")
@@ -36,6 +37,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Remove source.list mirror")
+                        .min_values(1)
                 ),
         )
         .subcommand(
