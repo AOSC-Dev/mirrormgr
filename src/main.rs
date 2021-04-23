@@ -141,16 +141,23 @@ fn read_components_option() -> Result<Value> {
 }
 
 fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
-    fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
-    fs::write(APT_SOURCE_FILE, format!("{} \n", source_list_str))?;
+    fs::write(
+        STATUS_FILE,
+        format!("{} \n", serde_json::to_string(&status)?),
+    )?;
+    fs::write(APT_SOURCE_FILE, source_list_str)?;
     Ok(())
 }
 
 fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
     let mirror_url = Url::parse(mirror_url)?;
     let debs_url = mirror_url.join("./debs")?;
-    let mut result = format!("deb {} {}", debs_url.as_str(), status.branch);
-    result = format!("{} {}", result, status.component.join(" "));
+    let result = format!(
+        "deb {} {} {} \n",
+        debs_url.as_str(),
+        status.branch,
+        status.component.join(" ")
+    );
     Ok(result)
 }
 
