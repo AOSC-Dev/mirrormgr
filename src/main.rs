@@ -45,9 +45,7 @@ fn main() -> Result<()> {
                 return Err(anyhow!("mirror or url isn't available"));
             }
 
-            let mut result =
-                format!("deb {}/debs {}", mirror_url, status.branch);
-            result = format!("{} {}", result, status.component.join(" "));
+            let result = to_config(mirror_url, &status)?;
             apply_config(&status, result)?;
         }
 
@@ -76,4 +74,11 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
     fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
     fs::write(APT_SOURCE_FILE, format!("{} \n", source_list_str))?;
     Ok(())
+}
+
+fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
+    let mut result =
+        format!("deb {}/debs {}", mirror_url, status.branch);
+    result = format!("{} {}", result, status.component.join(" "));
+    Ok(result)
 }
