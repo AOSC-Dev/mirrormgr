@@ -45,7 +45,7 @@ fn main() -> Result<()> {
                 return Err(anyhow!("mirror or url isn't available"));
             }
 
-            let result = to_config(mirror_url, &status);
+            let result = to_config(mirror_url, &status)?;
             apply_config(&status, result)?;
         }
 
@@ -76,9 +76,10 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
     Ok(())
 }
 
-fn to_config(mirror_url: &str, status: &Status) -> String {
-    let mut result =
-        format!("deb {}/debs {}", mirror_url, status.branch);
+fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
+    let mirror_url = Url::parse(mirror_url)?;
+    let debs_url = mirror_url.join("./debs")?;
+    let mut result = format!("deb {} {}", debs_url.as_str(), status.branch);
     result = format!("{} {}", result, status.component.join(" "));
-    result
+    Ok(result)
 }
