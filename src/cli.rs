@@ -32,16 +32,25 @@ pub fn build_cli() -> App<'static, 'static> {
                 .about("Set the APT source mirror to default")
         )
         .subcommand(
-            SubCommand::with_name("remove-mirror")
-                .about("Remove the APT source mirror")
+            SubCommand::with_name("status")
+                .about("Get apt-gen-list status")
+        )
+        .subcommand(
+            SubCommand::with_name("add-component")
+                .about("Set the APT source mirror component")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Remove source.list mirror")
-                        .min_values(1)
+                        .help("Add source.list component")
+                        .min_values(1),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("status")
-                .about("Get apt-gen-list status")
+            SubCommand::with_name("remove-component")
+                .about("Set the APT source mirror component")
+                .arg(
+                    Arg::with_name("INPUT")
+                        .help("Remove source.list component")
+                        .min_values(1),
+                ),
         )
 }

@@ -32,20 +32,57 @@ fn main() -> Result<()> {
         ("set-mirror", Some(args)) => {
             let mirror_options = read_mirrors_option()?;
             let new_mirror = args.value_of("INPUT").unwrap();
+            let mirror_url: String;
 
-            let mirror_url: &str;
-
-            if let Some(v) = mirror_options.get(new_mirror) {
+            if mirror_options.get(new_mirror).is_some() {
                 status.mirror = new_mirror.to_string();
-                mirror_url = v.get("url").unwrap().as_str().unwrap();
-            } else if let Ok(_) = Url::parse(new_mirror) {
+                mirror_url = get_mirror_url(new_mirror)?;
+            } else if Url::parse(new_mirror).is_ok() {
                 status.mirror = new_mirror.to_string();
-                mirror_url = new_mirror;
+                mirror_url = new_mirror.to_string();
             } else {
                 return Err(anyhow!("mirror or url isn't available"));
             }
 
-            let result = to_config(mirror_url, &status)?;
+            let result = to_config(&mirror_url, &status)?;
+            apply_config(&status, result)?;
+        }
+        ("add-component", Some(args)) => {
+            let new_components = args.values_of("INPUT").unwrap();
+
+            for i in new_components {
+                if status.component.contains(&i.to_string()) {
+                    return Err(anyhow!(format!(
+                        "Component: {} already exist in component.",
+                        &i
+                    )));
+                } else {
+                    status.component.push(i.to_string());
+                }
+            }
+
+            let mirror_url = get_mirror_url(&status.mirror)?;
+            let result = to_config(&mirror_url, &status)?;
+
+            apply_config(&status, result)?;
+        }
+        ("remove-component", Some(args)) => {
+            let remove_components = args.values_of("INPUT").unwrap();
+
+            for i in remove_components {
+                if let Some(index) = status.component.iter().position(|v| v == i) {
+                    status.component.remove(index);
+                } else {
+                    return Err(anyhow!(format!(
+                        "Component: {} doesn't exist in component.",
+                        &i
+                    )));
+                }
+            }
+
+            let mirror_url = get_mirror_url(&status.mirror)?;
+            let result = to_config(&mirror_url, &status)?;
+
             apply_config(&status, result)?;
         }
 
@@ -82,4 +119,21 @@ fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
     let mut result = format!("deb {} {}", debs_url.as_str(), status.branch);
     result = format!("{} {}", result, status.component.join(" "));
     Ok(result)
+}
+
+fn get_mirror_url(mirror_name: &str) -> Result<String> {
+    if Url::parse(mirror_name).is_ok() {
+        return Ok(mirror_name.to_string());
+    }
+    let mirror_options = read_mirrors_option()?;
+    let mirror_url = mirror_options
+        .get(mirror_name)
+        .ok_or_else(|| anyhow!("mirror doesn't exist"))?
+        .get("url")
+        .ok_or_else(|| anyhow!("No url found on value!"))?
+        .as_str()
+        .ok_or_else(|| anyhow!("Url isn't String!"))?
+        .to_owned();
+
+    Ok(mirror_url)
 }
