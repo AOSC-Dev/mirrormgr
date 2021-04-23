@@ -46,10 +46,7 @@ fn main() -> Result<()> {
 
             for i in new_components {
                 if status.component.contains(&i.to_string()) {
-                    return Err(anyhow!(format!(
-                        "{} already exist in component.",
-                        &i
-                    )));
+                    return Err(anyhow!(format!("{} already exist in component.", &i)));
                 } else if component_options.get(i).is_none() {
                     return Err(anyhow!(format!("{} is not option.", &i)));
                 } else {
@@ -81,7 +78,6 @@ fn main() -> Result<()> {
 
             apply_config(&status, result)?;
         }
-
         _ => {
             unreachable!()
         }
@@ -89,22 +85,56 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn new_default_status() -> Status {
+    let default_status = Status {
+        branch: "stable".to_string(),
+        component: vec!["main".to_string()],
+        mirror: "origin".to_string(),
+    };
+
+    default_status
+}
+
 fn read_status() -> Result<Status> {
-    let status = fs::read(STATUS_FILE)?;
-    let status: Status = serde_json::from_slice(&status)?;
+    let status = fs::read(STATUS_FILE);
+    let status = match status {
+        Ok(v) => v,
+        Err(_) => {
+            fs::create_dir_all("/var/lib/apt/gen")?;
+            fs::File::create(STATUS_FILE)?;
+            fs::read(STATUS_FILE)?
+        }
+    };
+    let status: Result<Status, _> = serde_json::from_slice(&status);
+    let status = match status {
+        Ok(v) => v,
+        Err(_) => new_default_status(),
+    };
 
     Ok(status)
 }
 
 fn read_mirrors_option() -> Result<Value> {
-    let mirrors_data = fs::read(REPO_MIRROR_FILE)?;
+    let mirrors_data = fs::read(REPO_MIRROR_FILE);
+    if mirrors_data.is_err() {
+        return Err(anyhow!(
+            "mirrors data not found! Pleease check your aosc-os-repository-data package."
+        ));
+    }
+    let mirrors_data = mirrors_data.unwrap();
     let mirrors_data = serde_yaml::from_slice(&mirrors_data)?;
 
     Ok(mirrors_data)
 }
 
 fn read_components_option() -> Result<Value> {
-    let components_data = fs::read(REPO_COMPONENT_FILE)?;
+    let components_data = fs::read(REPO_COMPONENT_FILE);
+    if components_data.is_err() {
+        return Err(anyhow!(
+            "component data not found! Pleease check your aosc-os-repository-data package."
+        ));
+    }
+    let components_data = components_data.unwrap();
     let components_data = serde_yaml::from_slice(&components_data)?;
 
     Ok(components_data)
@@ -131,7 +161,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     let mirror_options = read_mirrors_option()?;
     let mirror_url = mirror_options
         .get(mirror_name)
-        .ok_or_else(|| anyhow!("mirror doesn't exist"))?
+        .ok_or_else(|| anyhow!("mirror doesn't exist!"))?
         .get("url")
         .ok_or_else(|| anyhow!("No url found on value!"))?
         .as_str()
