@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
 use std::fs;
+use url::Url;
 
 mod cli;
 
@@ -30,7 +30,6 @@ fn main() -> Result<()> {
             println!("mirror: {}", status.mirror);
         }
         ("set-mirror", Some(args)) => {
-            let url_re = Regex::new(r"/(http|https)://([\w.]+/?)\S*/ig").unwrap();
             let mirror_options = read_mirrors_option()?;
             let new_mirror = args.value_of("INPUT").unwrap();
 
@@ -39,7 +38,7 @@ fn main() -> Result<()> {
             if let Some(v) = mirror_options.get(new_mirror) {
                 status.mirror = new_mirror.to_string();
                 mirror_url = v.get("url").unwrap().as_str().unwrap();
-            } else if url_re.is_match(new_mirror) {
+            } else if let Ok(_) = Url::parse(new_mirror) {
                 status.mirror = new_mirror.to_string();
                 mirror_url = new_mirror;
             } else {
@@ -51,6 +50,7 @@ fn main() -> Result<()> {
             result = format!("{} {}", result, status.component.join(" "));
             apply_config(&status, result)?;
         }
+
         _ => {
             unreachable!()
         }
@@ -74,6 +74,6 @@ fn read_mirrors_option() -> Result<Value> {
 
 fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
     fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
-    fs::write(APT_SOURCE_FILE, source_list_str)?;
+    fs::write(APT_SOURCE_FILE, format!("{} \n", source_list_str))?;
     Ok(())
 }
