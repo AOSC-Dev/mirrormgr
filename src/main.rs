@@ -9,6 +9,7 @@ mod cli;
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const REPO_MIRROR_FILE: &str = "/usr/share/distro-repository-data/mirrors.yml";
+const REPO_COMPONENT_FILE: &str = "/usr/share/distro-repository-data/comps.yml";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 
 #[derive(Deserialize, Serialize)]
@@ -30,32 +31,27 @@ fn main() -> Result<()> {
             println!("mirror: {}", status.mirror);
         }
         ("set-mirror", Some(args)) => {
-            let mirror_options = read_mirrors_option()?;
             let new_mirror = args.value_of("INPUT").unwrap();
             let mirror_url: String;
 
-            if mirror_options.get(new_mirror).is_some() {
-                status.mirror = new_mirror.to_string();
-                mirror_url = get_mirror_url(new_mirror)?;
-            } else if Url::parse(new_mirror).is_ok() {
-                status.mirror = new_mirror.to_string();
-                mirror_url = new_mirror.to_string();
-            } else {
-                return Err(anyhow!("mirror or url isn't available"));
-            }
+            status.mirror = new_mirror.to_string();
+            mirror_url = get_mirror_url(new_mirror)?;
 
             let result = to_config(&mirror_url, &status)?;
             apply_config(&status, result)?;
         }
         ("add-component", Some(args)) => {
             let new_components = args.values_of("INPUT").unwrap();
+            let component_options = read_components_option()?;
 
             for i in new_components {
                 if status.component.contains(&i.to_string()) {
                     return Err(anyhow!(format!(
-                        "Component: {} already exist in component.",
+                        "{} already exist in component.",
                         &i
                     )));
+                } else if component_options.get(i).is_none() {
+                    return Err(anyhow!(format!("{} is not option.", &i)));
                 } else {
                     status.component.push(i.to_string());
                 }
@@ -101,10 +97,17 @@ fn read_status() -> Result<Status> {
 }
 
 fn read_mirrors_option() -> Result<Value> {
-    let mirrors_data = fs::read(REPO_MIRROR_FILE.to_string())?;
+    let mirrors_data = fs::read(REPO_MIRROR_FILE)?;
     let mirrors_data = serde_yaml::from_slice(&mirrors_data)?;
 
     Ok(mirrors_data)
+}
+
+fn read_components_option() -> Result<Value> {
+    let components_data = fs::read(REPO_COMPONENT_FILE)?;
+    let components_data = serde_yaml::from_slice(&components_data)?;
+
+    Ok(components_data)
 }
 
 fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
