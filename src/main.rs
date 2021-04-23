@@ -42,7 +42,7 @@ fn main() -> Result<()> {
                 status.mirror = new_mirror.to_string();
                 mirror_url = new_mirror;
             } else {
-                return Err(anyhow!("mirror or url doesn't available"));
+                return Err(anyhow!("mirror or url isn't available"));
             }
 
             let mut result =
