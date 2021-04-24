@@ -88,7 +88,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
         if let Some(index) = status.mirror.iter().position(|v| v == i) {
             status.mirror.remove(index);
         } else {
-            return Err(anyhow!(format!("Cannot find mirror: {}", i)));
+            return Err(anyhow!("Cannot find mirror: {}", i));
         }
     }
     let result = to_config(&status)?;
@@ -116,10 +116,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
         if let Some(index) = status.component.iter().position(|v| v == i) {
             status.component.remove(index);
         } else {
-            return Err(anyhow!(format!(
-                "Component: {} doesn't exist in component.",
-                &i
-            )));
+            return Err(anyhow!("Component: {} doesn't exist in component.", &i));
         }
     }
 
@@ -132,9 +129,9 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
 fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
     for i in args.values_of("INPUT").unwrap() {
         if status.component.contains(&i.to_string()) {
-            return Err(anyhow!(format!("{} already exist in component.", &i)));
+            return Err(anyhow!("{} already exist in component.", &i));
         } else if read_distro_file(REPO_COMPONENT_FILE)?.get(i).is_none() {
-            return Err(anyhow!(format!("{} is not option.", &i)));
+            return Err(anyhow!("{} is not option.", &i));
         } else {
             status.component.push(i.to_string());
         }
