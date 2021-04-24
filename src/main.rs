@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
-use std::fs;
+use std::{collections::HashMap, fs};
 use url::Url;
 
 mod cli;
@@ -105,7 +105,7 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
             status.mirror.push(i.to_string());
         }
     }
-    apply_status(&*status,  gen_sources_list_string(&status)?)?;
+    apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -119,7 +119,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
         }
     }
 
-    apply_status(&status,  gen_sources_list_string(&status)?)?;
+    apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -154,8 +154,8 @@ fn read_status() -> Result<Status> {
 }
 
 fn read_distro_file(file: &str) -> Result<Value> {
-    if let Ok(mirrors_data) = fs::read(file) {
-        return Ok(serde_yaml::from_slice(&mirrors_data)?);
+    if let Ok(file_data) = fs::read(file) {
+        return Ok(serde_yaml::from_slice(&file_data)?);
     }
 
     Err(anyhow!(
@@ -174,7 +174,7 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
 }
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
-    let mut result = "".to_string();
+    let mut result = String::new();
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
         let debs_url = Url::parse(&mirror_url)?.join("debs")?;
@@ -189,6 +189,21 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     }
 
     Ok(result)
+}
+
+fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
+    let mirrors = read_distro_file(REPO_MIRROR_FILE)?;
+    let mirrors = mirrors.as_mapping().ok_or_else(|| {
+        anyhow!("distro file broken! Please check your aosc-os-repository-data package!")
+    })?;
+    let mut mirrors_map = HashMap::new();
+    for (k, _) in mirrors {
+        if let Some(mirror_name) = k.as_str() {
+            mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
+        }
+    }
+
+    Ok(mirrors_map)
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
