@@ -16,7 +16,7 @@ const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 struct Status {
     branch: String,
     component: Vec<String>,
-    mirror: String,
+    mirror: Vec<String>,
 }
 
 impl Default for Status {
@@ -24,7 +24,7 @@ impl Default for Status {
         Status {
             branch: "stable".to_string(),
             component: vec!["main".to_string()],
-            mirror: "origin".to_string(),
+            mirror: vec!["origin".to_string()],
         }
     }
 }
@@ -38,16 +38,41 @@ fn main() -> Result<()> {
             for i in status.component {
                 println!("component: {}", i);
             }
-            println!("mirror: {}", status.mirror);
+            for i in status.mirror {
+                println!("mirror: {}", i);
+            }
         }
         ("set-mirror", Some(args)) => {
             let new_mirror = args.value_of("INPUT").unwrap();
-            let mirror_url: String;
-
-            status.mirror = new_mirror.to_string();
-            mirror_url = get_mirror_url(new_mirror)?;
-
-            let result = to_config(&mirror_url, &status)?;
+            status.mirror = vec![new_mirror.to_string()];
+            let result = to_config(&status)?;
+            apply_config(&status, result)?;
+        }
+        ("add-mirror", Some(args)) => {
+            let new_mirrors = args.values_of("INPUT").unwrap();
+            for i in new_mirrors {
+                if status.mirror.contains(&i.to_string()) {
+                    return Err(anyhow!("mirror already exist!"));
+                } else {
+                    status.mirror.push(i.to_string());
+                }
+            }
+            let result = to_config(&status)?;
+            apply_config(&status, result)?;
+        }
+        ("remove-mirror", Some(args)) => {
+            let remove_mirror = args.values_of("INPUT").unwrap();
+            if status.mirror.len() == 1 {
+                return Err(anyhow!("only have 1 mirror! cannot delete it!!!"));
+            }
+            for i in remove_mirror {
+                if let Some(index) = status.mirror.iter().position(|v| v == i) {
+                    status.mirror.remove(index);
+                } else {
+                    return Err(anyhow!(format!("Cannot find mirror: {}", i)));
+                }
+            }
+            let result = to_config(&status)?;
             apply_config(&status, result)?;
         }
         ("add-component", Some(args)) => {
@@ -75,8 +100,8 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             )));
         }
     }
-    let mirror_url = get_mirror_url(&status.mirror)?;
-    let result = to_config(&mirror_url, &status)?;
+
+    let result = to_config(&status)?;
     apply_config(&status, result)?;
     Ok(())
 }
@@ -93,15 +118,14 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             status.component.push(i.to_string());
         }
     }
-    let mirror_url = get_mirror_url(&status.mirror)?;
-    let result = to_config(&mirror_url, &*status)?;
-    apply_config(&*status, result)?;
+    let result = to_config(&status)?;
+    apply_config(&status, result)?;
+
     Ok(())
 }
 
 fn read_status() -> Result<Status> {
-    let status = fs::read(STATUS_FILE);
-    let status = match status {
+    let status = match fs::read(STATUS_FILE) {
         Ok(v) => v,
         Err(_) => {
             fs::create_dir_all("/var/lib/apt/gen")?;
@@ -143,15 +167,18 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
     Ok(())
 }
 
-fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
-    let mirror_url = Url::parse(mirror_url)?;
-    let debs_url = mirror_url.join("debs")?;
-    let result = format!(
-        "deb {} {} {} \n",
-        debs_url.as_str(),
-        status.branch,
-        status.component.join(" ")
-    );
+fn to_config(status: &Status) -> Result<String> {
+    let mut result = "".to_string();
+    for i in &status.mirror {
+        let mirror_url = get_mirror_url(i.as_str())?;
+        let debs_url = Url::parse(&mirror_url)?.join("debs")?;
+        result += &format!(
+            "deb {} {} {} \n",
+            debs_url.as_str(),
+            status.branch,
+            status.component.join(" ")
+        );
+    }
     Ok(result)
 }
 

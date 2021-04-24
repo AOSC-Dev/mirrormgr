@@ -23,8 +23,26 @@ pub fn build_cli() -> App<'static, 'static> {
                 .about("Set the APT source mirror")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Add source.list mirror")
+                        .help("source.list mirror")
                         .max_values(1),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("add-mirror")
+                .about("Set the multi APT source mirror")
+                .arg(
+                    Arg::with_name("INPUT")
+                        .help("source.list mirror")
+                        .min_values(1),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("remove-mirror")
+                .about("Remove the APT source mirror (only use multi mirror)")
+                .arg(
+                    Arg::with_name("INPUT")
+                        .help("source.list mirror")
+                        .min_values(1),
                 ),
         )
         .subcommand(
@@ -46,7 +64,7 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("remove-component")
-                .about("Set the APT source mirror component")
+                .about("Remove the APT source mirror component")
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Remove source.list component")
