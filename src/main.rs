@@ -49,31 +49,10 @@ fn main() -> Result<()> {
             apply_config(&status, result)?;
         }
         ("add-mirror", Some(args)) => {
-            let new_mirrors = args.values_of("INPUT").unwrap();
-            for i in new_mirrors {
-                if status.mirror.contains(&i.to_string()) {
-                    return Err(anyhow!("mirror already exist!"));
-                } else {
-                    status.mirror.push(i.to_string());
-                }
-            }
-            let result = to_config(&status)?;
-            apply_config(&status, result)?;
+            add_mirror(args, &mut status)?;
         }
         ("remove-mirror", Some(args)) => {
-            let remove_mirror = args.values_of("INPUT").unwrap();
-            if status.mirror.len() == 1 {
-                return Err(anyhow!("only have 1 mirror! cannot delete it!!!"));
-            }
-            for i in remove_mirror {
-                if let Some(index) = status.mirror.iter().position(|v| v == i) {
-                    status.mirror.remove(index);
-                } else {
-                    return Err(anyhow!(format!("Cannot find mirror: {}", i)));
-                }
-            }
-            let result = to_config(&status)?;
-            apply_config(&status, result)?;
+            remove_mirror(args, &mut status)?;
         }
         ("add-component", Some(args)) => {
             add_component(args, &mut status)?;
@@ -85,12 +64,43 @@ fn main() -> Result<()> {
             unreachable!()
         }
     }
+
+    Ok(())
+}
+
+fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+    if status.mirror.len() == 1 {
+        return Err(anyhow!("only have 1 mirror! cannot delete it!!!"));
+    }
+    for i in args.values_of("INPUT").unwrap() {
+        if let Some(index) = status.mirror.iter().position(|v| v == i) {
+            status.mirror.remove(index);
+        } else {
+            return Err(anyhow!(format!("Cannot find mirror: {}", i)));
+        }
+    }
+    let result = to_config(&status)?;
+    apply_config(&*status, result)?;
+
+    Ok(())
+}
+
+fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+    for i in args.values_of("INPUT").unwrap() {
+        if status.mirror.contains(&i.to_string()) {
+            return Err(anyhow!("mirror already exist!"));
+        } else {
+            status.mirror.push(i.to_string());
+        }
+    }
+    let result = to_config(&status)?;
+    apply_config(&*status, result)?;
+
     Ok(())
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
-    let remove_components = args.values_of("INPUT").unwrap();
-    for i in remove_components {
+    for i in args.values_of("INPUT").unwrap() {
         if let Some(index) = status.component.iter().position(|v| v == i) {
             status.component.remove(index);
         } else {
@@ -103,16 +113,15 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
 
     let result = to_config(&status)?;
     apply_config(&status, result)?;
+
     Ok(())
 }
 
 fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
-    let new_components = args.values_of("INPUT").unwrap();
-    let component_options = read_components_option()?;
-    for i in new_components {
+    for i in args.values_of("INPUT").unwrap() {
         if status.component.contains(&i.to_string()) {
             return Err(anyhow!(format!("{} already exist in component.", &i)));
-        } else if component_options.get(i).is_none() {
+        } else if read_components_option()?.get(i).is_none() {
             return Err(anyhow!(format!("{} is not option.", &i)));
         } else {
             status.component.push(i.to_string());
@@ -164,6 +173,7 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
         format!("{} \n", serde_json::to_string(&status)?),
     )?;
     fs::write(APT_SOURCE_FILE, source_list_str)?;
+
     Ok(())
 }
 
@@ -179,6 +189,7 @@ fn to_config(status: &Status) -> Result<String> {
             status.component.join(" ")
         );
     }
+
     Ok(result)
 }
 
@@ -186,8 +197,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     if Url::parse(mirror_name).is_ok() {
         return Ok(mirror_name.to_string());
     }
-    let mirror_options = read_mirrors_option()?;
-    let mirror_url = mirror_options
+    let mirror_url = read_mirrors_option()?
         .get(mirror_name)
         .ok_or_else(|| anyhow!("mirror doesn't exist!"))?
         .get("url")
