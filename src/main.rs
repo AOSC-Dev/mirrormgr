@@ -18,6 +18,16 @@ struct Status {
     component: Vec<String>,
     mirror: String,
 }
+
+impl Default for Status {
+    fn default() -> Self {
+        Status {
+            branch: "stable".to_string(),
+            component: vec!["main".to_string()],
+            mirror: "origin".to_string(),
+        }
+    }
+}
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
     let mut status = read_status()?;
@@ -41,42 +51,10 @@ fn main() -> Result<()> {
             apply_config(&status, result)?;
         }
         ("add-component", Some(args)) => {
-            let new_components = args.values_of("INPUT").unwrap();
-            let component_options = read_components_option()?;
-
-            for i in new_components {
-                if status.component.contains(&i.to_string()) {
-                    return Err(anyhow!(format!("{} already exist in component.", &i)));
-                } else if component_options.get(i).is_none() {
-                    return Err(anyhow!(format!("{} is not option.", &i)));
-                } else {
-                    status.component.push(i.to_string());
-                }
-            }
-
-            let mirror_url = get_mirror_url(&status.mirror)?;
-            let result = to_config(&mirror_url, &status)?;
-
-            apply_config(&status, result)?;
+            add_component(args, &mut status)?;
         }
         ("remove-component", Some(args)) => {
-            let remove_components = args.values_of("INPUT").unwrap();
-
-            for i in remove_components {
-                if let Some(index) = status.component.iter().position(|v| v == i) {
-                    status.component.remove(index);
-                } else {
-                    return Err(anyhow!(format!(
-                        "Component: {} doesn't exist in component.",
-                        &i
-                    )));
-                }
-            }
-
-            let mirror_url = get_mirror_url(&status.mirror)?;
-            let result = to_config(&mirror_url, &status)?;
-
-            apply_config(&status, result)?;
+            remove_component(args, status)?;
         }
         _ => {
             unreachable!()
@@ -85,14 +63,40 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn new_default_status() -> Status {
-    let default_status = Status {
-        branch: "stable".to_string(),
-        component: vec!["main".to_string()],
-        mirror: "origin".to_string(),
-    };
+fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
+    let remove_components = args.values_of("INPUT").unwrap();
+    for i in remove_components {
+        if let Some(index) = status.component.iter().position(|v| v == i) {
+            status.component.remove(index);
+        } else {
+            return Err(anyhow!(format!(
+                "Component: {} doesn't exist in component.",
+                &i
+            )));
+        }
+    }
+    let mirror_url = get_mirror_url(&status.mirror)?;
+    let result = to_config(&mirror_url, &status)?;
+    apply_config(&status, result)?;
+    Ok(())
+}
 
-    default_status
+fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+    let new_components = args.values_of("INPUT").unwrap();
+    let component_options = read_components_option()?;
+    for i in new_components {
+        if status.component.contains(&i.to_string()) {
+            return Err(anyhow!(format!("{} already exist in component.", &i)));
+        } else if component_options.get(i).is_none() {
+            return Err(anyhow!(format!("{} is not option.", &i)));
+        } else {
+            status.component.push(i.to_string());
+        }
+    }
+    let mirror_url = get_mirror_url(&status.mirror)?;
+    let result = to_config(&mirror_url, &*status)?;
+    apply_config(&*status, result)?;
+    Ok(())
 }
 
 fn read_status() -> Result<Status> {
@@ -105,39 +109,29 @@ fn read_status() -> Result<Status> {
             fs::read(STATUS_FILE)?
         }
     };
-    let status: Result<Status, _> = serde_json::from_slice(&status);
-    let status = match status {
-        Ok(v) => v,
-        Err(_) => new_default_status(),
-    };
+    let status: Status = serde_json::from_slice(&status).unwrap_or_default();
 
     Ok(status)
 }
 
 fn read_mirrors_option() -> Result<Value> {
-    let mirrors_data = fs::read(REPO_MIRROR_FILE);
-    if mirrors_data.is_err() {
-        return Err(anyhow!(
-            "mirrors data not found! Pleease check your aosc-os-repository-data package."
-        ));
+    if let Ok(mirrors_data) = fs::read(REPO_MIRROR_FILE) {
+        return Ok(serde_yaml::from_slice(&mirrors_data)?);
     }
-    let mirrors_data = mirrors_data.unwrap();
-    let mirrors_data = serde_yaml::from_slice(&mirrors_data)?;
 
-    Ok(mirrors_data)
+    Err(anyhow!(
+        "mirrors data not found! Pleease check your aosc-os-repository-data package."
+    ))
 }
 
 fn read_components_option() -> Result<Value> {
-    let components_data = fs::read(REPO_COMPONENT_FILE);
-    if components_data.is_err() {
-        return Err(anyhow!(
-            "component data not found! Pleease check your aosc-os-repository-data package."
-        ));
+    if let Ok(components_data) = fs::read(REPO_COMPONENT_FILE) {
+        return Ok(serde_yaml::from_slice(&components_data)?);
     }
-    let components_data = components_data.unwrap();
-    let components_data = serde_yaml::from_slice(&components_data)?;
 
-    Ok(components_data)
+    Err(anyhow!(
+        "component data not found! Pleease check your aosc-os-repository-data package."
+    ))
 }
 
 fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
@@ -151,7 +145,7 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
 
 fn to_config(mirror_url: &str, status: &Status) -> Result<String> {
     let mirror_url = Url::parse(mirror_url)?;
-    let debs_url = mirror_url.join("./debs")?;
+    let debs_url = mirror_url.join("debs")?;
     let result = format!(
         "deb {} {} {} \n",
         debs_url.as_str(),
