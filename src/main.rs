@@ -229,7 +229,13 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
 
     let mut suites = Vec::new();
     for i in branch_suites {
-        suites.push(i.as_str().unwrap().to_string());
+        if let Some(i) = i.as_str() {
+            suites.push(i.to_string());
+        } else {
+            return Err(anyhow!(
+                "suites broken! Please check your aosc-os-repository-data package!"
+            ));
+        }
     }
     Ok(suites)
 }
