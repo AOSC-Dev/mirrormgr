@@ -184,12 +184,14 @@ fn to_config(status: &Status) -> Result<String> {
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
         let debs_url = Url::parse(&mirror_url)?.join("debs")?;
-        result += &format!(
-            "deb {} {} {} \n",
-            debs_url.as_str(),
-            status.branch,
-            status.component.join(" ")
-        );
+        for branch in get_branch_suites(&status.branch)? {
+            result += &format!(
+                "deb {} {} {} \n",
+                debs_url.as_str(),
+                branch,
+                status.component.join(" ")
+            );
+        }
     }
 
     Ok(result)
@@ -209,4 +211,25 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
         .to_owned();
 
     Ok(mirror_url)
+}
+
+fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
+    let branch_suites = read_distro_file(REPO_BRANCH_FILE)?
+        .get(branch_name)
+        .ok_or_else(|| anyhow!("branch doesn't exist!"))?
+        .get("suites")
+        .ok_or_else(|| {
+            anyhow!("suites doesn't exist! Please check your aosc-os-repository-data package!")
+        })?
+        .as_sequence()
+        .ok_or_else(|| {
+            anyhow!("suites isn't arrays! Please check your aosc-os-repository-data package!")
+        })?
+        .to_owned();
+
+    let mut suites = Vec::new();
+    for i in branch_suites {
+        suites.push(i.as_str().unwrap().to_string());
+    }
+    Ok(suites)
 }
