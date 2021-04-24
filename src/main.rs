@@ -29,6 +29,7 @@ impl Default for Status {
         }
     }
 }
+
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
     let mut status = read_status()?;
@@ -46,8 +47,7 @@ fn main() -> Result<()> {
         ("set-mirror", Some(args)) => {
             let new_mirror = args.value_of("INPUT").unwrap();
             status.mirror = vec![new_mirror.to_string()];
-            let result = to_config(&status)?;
-            apply_config(&status, result)?;
+            apply_status(&status, gen_sources_list_string(&status)?)?;
         }
         ("add-mirror", Some(args)) => {
             add_mirror(args, &mut status)?;
@@ -71,9 +71,7 @@ fn main() -> Result<()> {
             } else {
                 return Err(anyhow!("branch doesn't exist!"));
             }
-
-            let result = to_config(&status)?;
-            apply_config(&status, result)?;
+            apply_status(&status, gen_sources_list_string(&status)?)?;
         }
         _ => {
             unreachable!()
@@ -94,8 +92,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             return Err(anyhow!("Cannot find mirror: {}", i));
         }
     }
-    let result = to_config(&status)?;
-    apply_config(&*status, result)?;
+    apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -108,8 +105,7 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
             status.mirror.push(i.to_string());
         }
     }
-    let result = to_config(&status)?;
-    apply_config(&*status, result)?;
+    apply_status(&*status,  gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -123,8 +119,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
         }
     }
 
-    let result = to_config(&status)?;
-    apply_config(&status, result)?;
+    apply_status(&status,  gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -139,8 +134,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             status.component.push(i.to_string());
         }
     }
-    let result = to_config(&status)?;
-    apply_config(&status, result)?;
+    apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
@@ -169,7 +163,7 @@ fn read_distro_file(file: &str) -> Result<Value> {
     ))
 }
 
-fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
+fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
     fs::write(
         STATUS_FILE,
         format!("{} \n", serde_json::to_string(&status)?),
@@ -179,7 +173,7 @@ fn apply_config(status: &Status, source_list_str: String) -> Result<()> {
     Ok(())
 }
 
-fn to_config(status: &Status) -> Result<String> {
+fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = "".to_string();
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
@@ -237,5 +231,6 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
             ));
         }
     }
+
     Ok(suites)
 }
