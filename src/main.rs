@@ -71,6 +71,9 @@ fn main() -> Result<()> {
             } else {
                 return Err(anyhow!("branch doesn't exist!"));
             }
+
+            let result = to_config(&status)?;
+            apply_config(&status, result)?;
         }
         _ => {
             unreachable!()
