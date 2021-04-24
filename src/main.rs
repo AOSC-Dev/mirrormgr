@@ -10,6 +10,7 @@ mod cli;
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const REPO_MIRROR_FILE: &str = "/usr/share/distro-repository-data/mirrors.yml";
 const REPO_COMPONENT_FILE: &str = "/usr/share/distro-repository-data/comps.yml";
+const REPO_BRANCH_FILE: &str = "/usr/share/distro-repository-data/branches.yml";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 
 #[derive(Deserialize, Serialize)]
@@ -59,6 +60,17 @@ fn main() -> Result<()> {
         }
         ("remove-component", Some(args)) => {
             remove_component(args, status)?;
+        }
+        ("set-branch", Some(args)) => {
+            let new_branch = args.value_of("INPUT").unwrap();
+            if read_distro_file(REPO_BRANCH_FILE)?
+                .get(new_branch)
+                .is_some()
+            {
+                status.branch = new_branch.to_string();
+            } else {
+                return Err(anyhow!("branch doesn't exist!"));
+            }
         }
         _ => {
             unreachable!()
@@ -121,7 +133,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     for i in args.values_of("INPUT").unwrap() {
         if status.component.contains(&i.to_string()) {
             return Err(anyhow!(format!("{} already exist in component.", &i)));
-        } else if read_components_option()?.get(i).is_none() {
+        } else if read_distro_file(REPO_COMPONENT_FILE)?.get(i).is_none() {
             return Err(anyhow!(format!("{} is not option.", &i)));
         } else {
             status.component.push(i.to_string());
@@ -147,23 +159,13 @@ fn read_status() -> Result<Status> {
     Ok(status)
 }
 
-fn read_mirrors_option() -> Result<Value> {
-    if let Ok(mirrors_data) = fs::read(REPO_MIRROR_FILE) {
+fn read_distro_file(file: &str) -> Result<Value> {
+    if let Ok(mirrors_data) = fs::read(file) {
         return Ok(serde_yaml::from_slice(&mirrors_data)?);
     }
 
     Err(anyhow!(
-        "mirrors data not found! Pleease check your aosc-os-repository-data package."
-    ))
-}
-
-fn read_components_option() -> Result<Value> {
-    if let Ok(components_data) = fs::read(REPO_COMPONENT_FILE) {
-        return Ok(serde_yaml::from_slice(&components_data)?);
-    }
-
-    Err(anyhow!(
-        "component data not found! Pleease check your aosc-os-repository-data package."
+        "distro repo data not found! Pleease check your aosc-os-repository-data package."
     ))
 }
 
@@ -197,7 +199,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     if Url::parse(mirror_name).is_ok() {
         return Ok(mirror_name.to_string());
     }
-    let mirror_url = read_mirrors_option()?
+    let mirror_url = read_distro_file(REPO_MIRROR_FILE)?
         .get(mirror_name)
         .ok_or_else(|| anyhow!("mirror doesn't exist!"))?
         .get("url")
