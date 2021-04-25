@@ -179,13 +179,13 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
         let arch =
-            get_arch_name().unwrap_or(Err(anyhow!("AOSC OS doesn't not support this arch!"))?);
-        let debs_url: Url;
-        if vec!["amd64", "arm64", "ppc64el", "loongson3"].contains(&arch) {
-            debs_url = Url::parse(&mirror_url)?.join("debs")?;
+            get_arch_name().ok_or_else(|| anyhow!("AOSC OS doesn't support this arch!"))?;
+        let directory_name = if vec!["amd64", "arm64", "ppc64el", "loongson3"].contains(&arch) {
+            "debs"
         } else {
-            debs_url = Url::parse(&mirror_url)?.join("debs-retro")?;
-        }
+            "debs-retro"
+        };
+        let debs_url = Url::parse(&mirror_url)?.join(directory_name)?;
         for branch in get_branch_suites(&status.branch)? {
             result += &format!(
                 "deb {} {} {} \n",
