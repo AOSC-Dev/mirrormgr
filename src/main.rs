@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
+use std::env::consts::ARCH;
 use std::{collections::HashMap, fs};
 use url::Url;
 
@@ -177,7 +178,14 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = String::new();
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
-        let debs_url = Url::parse(&mirror_url)?.join("debs")?;
+        let arch =
+            get_arch_name().unwrap_or(Err(anyhow!("AOSC OS doesn't not support this arch!"))?);
+        let debs_url: Url;
+        if vec!["amd64", "arm64", "ppc64el", "loongson3"].contains(&arch) {
+            debs_url = Url::parse(&mirror_url)?.join("debs")?;
+        } else {
+            debs_url = Url::parse(&mirror_url)?.join("debs-retro")?;
+        }
         for branch in get_branch_suites(&status.branch)? {
             result += &format!(
                 "deb {} {} {} \n",
@@ -248,4 +256,37 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
     }
 
     Ok(suites)
+}
+
+/// AOSC OS specific architecture mapping for ppc64
+#[cfg(target_arch = "powerpc64")]
+#[inline]
+fn get_arch_name() -> Option<&'static str> {
+    let mut endian: libc::c_int = -1;
+    let result;
+    unsafe {
+        result = libc::prctl(libc::PR_GET_ENDIAN, &mut endian as *mut libc::c_int);
+    }
+    if result < 0 {
+        return None;
+    }
+    match endian {
+        libc::PR_ENDIAN_LITTLE | libc::PR_ENDIAN_PPC_LITTLE => Some("ppc64el"),
+        libc::PR_ENDIAN_BIG => Some("ppc64"),
+        _ => None,
+    }
+}
+
+/// AOSC OS specific architecture mapping table
+#[cfg(not(target_arch = "powerpc64"))]
+#[inline]
+fn get_arch_name() -> Option<&'static str> {
+    match ARCH {
+        "x86_64" => Some("amd64"),
+        "x86" => Some("i486"),
+        "powerpc" => Some("powerpc"),
+        "aarch64" => Some("arm64"),
+        "mips64" => Some("loongson3"),
+        _ => None,
+    }
 }
