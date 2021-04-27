@@ -90,24 +90,7 @@ fn main() -> Result<()> {
             }
         }
         ("set-fastest-mirror", _) => {
-            println!("Get mirror score, Please wait...");
-            let mut mirrors_score_table = HashMap::new();
-            for (mirror_name, _) in get_mirrors_hashmap()? {
-                if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
-                    mirrors_score_table.insert(mirror_name, score);
-                }
-            }
-            let mut fastest_mirror: (String, f32) = (String::new(), 10.0);
-            for (mirror_name, score) in mirrors_score_table {
-                if score < fastest_mirror.1 {
-                    fastest_mirror = (mirror_name, score);
-                }
-            }
-            println!(
-                "Fastest mirror: {}, score: {}, Setting {} as mirror...",
-                fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
-            );
-            set_mirror(fastest_mirror.0.as_str(), &mut status)?;
+            set_fastest_mirror(status)?;
         }
         _ => {
             unreachable!()
@@ -117,9 +100,33 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
+    println!("Getting mirror score, Please wait...");
+    let mut mirrors_score_table = HashMap::new();
+    for (mirror_name, _) in get_mirrors_hashmap()? {
+        if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
+            mirrors_score_table.insert(mirror_name, score);
+        }
+    }
+    let mut fastest_mirror: (String, f32) = (String::new(), 10.0);
+    for (mirror_name, score) in mirrors_score_table {
+        if score < fastest_mirror.1 {
+            fastest_mirror = (mirror_name, score);
+        }
+    }
+    println!(
+        "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
+        fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
+    );
+    set_mirror(fastest_mirror.0.as_str(), &mut status)?;
+
+    Ok(())
+}
+
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error> {
     status.mirror = vec![new_mirror.to_string()];
     apply_status(&*status, gen_sources_list_string(&*status)?)?;
+
     Ok(())
 }
 
