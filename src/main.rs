@@ -43,12 +43,8 @@ fn main() -> Result<()> {
     match app.subcommand() {
         ("status", _) => {
             println!("Branch: {}", status.branch);
-            for i in status.component {
-                println!("component: {}", i);
-            }
-            for i in status.mirror {
-                println!("mirror: {}", i);
-            }
+            println!("component: {}", status.component.join(", "));
+            println!("mirror: {}", status.component.join(", "));
         }
         ("set-mirror", Some(args)) => {
             let new_mirror = args.value_of("INPUT").unwrap();
