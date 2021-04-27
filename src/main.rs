@@ -103,21 +103,22 @@ fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
             mirrors_score_table.insert(mirror_name, score);
         }
     }
-    let mut fastest_mirror: (String, f32) = (String::new(), 11.0);
+    let mut fastest_mirror = (String::new(), 11.0);
     for (mirror_name, score) in mirrors_score_table {
         if score < fastest_mirror.1 {
             fastest_mirror = (mirror_name, score);
         }
     }
-    if fastest_mirror.1 != 11.0 {
-        println!(
-            "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
-            fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
-        );
-        set_mirror(fastest_mirror.0.as_str(), &mut status)?;
-    } else {
-        return Err(anyhow!("Get all mirrors failed! Please check your network connect!"));
+    if fastest_mirror.1 == 11.0 {
+        return Err(anyhow!(
+            "Get all mirrors failed! Please check your network connect!"
+        ));
     }
+    println!(
+        "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
+        fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
+    );
+    set_mirror(fastest_mirror.0.as_str(), &mut status)?;
 
     Ok(())
 }
@@ -267,14 +268,15 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
 }
 
 fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
-    let start = Instant::now();
+    let timer = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    let resp = attohttpc::get(download_url)
+    if attohttpc::get(download_url)
         .timeout(Duration::from_secs(10))
-        .send()?;
-    if resp.is_success() {
-        return Ok(start.elapsed().as_secs_f32());
+        .send()?
+        .is_success()
+    {
+        return Ok(timer.elapsed().as_secs_f32());
     }
 
     Err(anyhow!(
