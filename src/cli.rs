@@ -71,4 +71,8 @@ pub fn build_cli() -> App<'static, 'static> {
                         .min_values(1),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("mirrors-speedtest")
+                .about("Get mirrors speedtest")
+        )
 }

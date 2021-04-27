@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
+use attohttpc;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
-use std::env::consts::ARCH;
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, env::consts::ARCH, fs, io::copy, time::Instant};
 use url::Url;
 
 mod cli;
@@ -73,6 +73,20 @@ fn main() -> Result<()> {
                 return Err(anyhow!("branch doesn't exist!"));
             }
             apply_status(&status, gen_sources_list_string(&status)?)?;
+        }
+        ("mirrors-speedtest", _) => {
+            for (mirror_name, _) in get_mirrors_hashmap()? {
+                println!("Testing mirror: {}...", mirror_name);
+                if let Ok(time) = mirror_speedtest(mirror_name.as_str()) {
+                    println!(
+                        "time: {}s",
+                        time
+                    );
+                } else {
+                    println!("Response {} failed!", mirror_name);
+                    continue;
+                }
+            }
         }
         _ => {
             unreachable!()
@@ -178,8 +192,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = String::new();
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
-        let arch =
-            get_arch_name().ok_or_else(|| anyhow!("AOSC OS doesn't support this arch!"))?;
+        let arch = get_arch_name().ok_or_else(|| anyhow!("AOSC OS doesn't support this arch!"))?;
         let directory_name = if vec!["amd64", "arm64", "ppc64el", "loongson3"].contains(&arch) {
             "debs"
         } else {
@@ -212,6 +225,24 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
     }
 
     Ok(mirrors_map)
+}
+
+fn mirror_speedtest(mirror_name: &str) -> Result<f32> {
+    let start = Instant::now();
+    let end;
+    let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
+        .join("misc/u-boot-sunxi-with-spl.bin")?;
+    let resp = attohttpc::get(download_url).send()?;
+    if resp.is_success() {
+        end = Instant::now();
+    } else {
+        return Err(anyhow!("download fail!"));
+    }
+    let time = start.elapsed().as_secs_f32() - end.elapsed().as_secs_f32();
+    Ok(time)
+    /*let mut file = fs::File::create("/tmp/u-boot-sunxi-with-spl.bin")?;
+    copy(&mut resp.text()?.as_bytes(), &mut file)?;
+    let file_size = fs::metadata("/tmp/u-boot-sunxi-with-spl.bin")?.len();*/
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
