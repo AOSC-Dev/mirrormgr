@@ -3,7 +3,12 @@ use attohttpc;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
-use std::{collections::HashMap, env::consts::ARCH, fs, io::copy, time::Instant};
+use std::{
+    collections::HashMap,
+    env::consts::ARCH,
+    fs,
+    time::{Duration, Instant},
+};
 use url::Url;
 
 mod cli;
@@ -78,10 +83,7 @@ fn main() -> Result<()> {
             for (mirror_name, _) in get_mirrors_hashmap()? {
                 println!("Testing mirror: {}...", mirror_name);
                 if let Ok(time) = mirror_speedtest(mirror_name.as_str()) {
-                    println!(
-                        "time: {}s",
-                        time
-                    );
+                    println!("time: {}s", time);
                 } else {
                     println!("Response {} failed!", mirror_name);
                     continue;
@@ -231,15 +233,14 @@ fn mirror_speedtest(mirror_name: &str) -> Result<f32> {
     let start = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    let resp = attohttpc::get(download_url).send()?;
+    let resp = attohttpc::get(download_url)
+        .timeout(Duration::from_secs(10))
+        .send()?;
     if resp.is_success() {
         return Ok(start.elapsed().as_secs_f32());
     }
 
     Err(anyhow!("Response mirror: {} failed!", mirror_name))
-    /*let mut file = fs::File::create("/tmp/u-boot-sunxi-with-spl.bin")?;
-    copy(&mut resp.text()?.as_bytes(), &mut file)?;
-    let file_size = fs::metadata("/tmp/u-boot-sunxi-with-spl.bin")?.len();*/
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
