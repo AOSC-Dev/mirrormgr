@@ -47,8 +47,7 @@ fn main() -> Result<()> {
             println!("mirror: {}", status.component.join(", "));
         }
         ("set-mirror", Some(args)) => {
-            let new_mirror = args.value_of("INPUT").unwrap();
-            set_mirror(new_mirror, &mut status)?;
+            set_mirror(args.value_of("INPUT").unwrap(), &mut status)?;
         }
         ("add-mirror", Some(args)) => {
             add_mirror(args, &mut status)?;
@@ -156,12 +155,17 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
-    for i in args.values_of("INPUT").unwrap() {
-        if let Some(index) = status.component.iter().position(|v| v == i) {
-            status.component.remove(index);
-        } else {
-            return Err(anyhow!("Component: {} doesn't exist in component.", &i));
+    let remove_components: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    if !remove_components.contains(&"main") {
+        for i in remove_components {
+            if let Some(index) = status.component.iter().position(|v| v == i) {
+                status.component.remove(index);
+            } else {
+                return Err(anyhow!("Component: {} doesn't exist in component.", &i));
+            }
         }
+    } else {
+        return Err(anyhow!("Ooops, Cannot delete component main, Please don't play apt-gen-list!"));
     }
 
     apply_status(&status, gen_sources_list_string(&status)?)?;
