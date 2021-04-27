@@ -231,9 +231,12 @@ fn mirror_speedtest(mirror_name: &str) -> Result<f32> {
     let start = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    attohttpc::get(download_url).send()?;
-    let time = start.elapsed().as_secs_f32();
-    Ok(time)
+    let resp = attohttpc::get(download_url).send()?;
+    if resp.is_success() {
+        return Ok(start.elapsed().as_secs_f32());
+    }
+
+    Err(anyhow!("Response mirror: {} failed!", mirror_name))
     /*let mut file = fs::File::create("/tmp/u-boot-sunxi-with-spl.bin")?;
     copy(&mut resp.text()?.as_bytes(), &mut file)?;
     let file_size = fs::metadata("/tmp/u-boot-sunxi-with-spl.bin")?.len();*/
