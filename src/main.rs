@@ -103,17 +103,21 @@ fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
             mirrors_score_table.insert(mirror_name, score);
         }
     }
-    let mut fastest_mirror: (String, f32) = (String::new(), 10.0);
+    let mut fastest_mirror: (String, f32) = (String::new(), 11.0);
     for (mirror_name, score) in mirrors_score_table {
         if score < fastest_mirror.1 {
             fastest_mirror = (mirror_name, score);
         }
     }
-    println!(
-        "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
-        fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
-    );
-    set_mirror(fastest_mirror.0.as_str(), &mut status)?;
+    if fastest_mirror.1 != 11.0 {
+        println!(
+            "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
+            fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
+        );
+        set_mirror(fastest_mirror.0.as_str(), &mut status)?;
+    } else {
+        return Err(anyhow!("Get all mirrors failed! Please check your network connect!"));
+    }
 
     Ok(())
 }
@@ -165,9 +169,10 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             }
         }
     } else {
-        return Err(anyhow!("Ooops, Cannot delete component main, Please don't play apt-gen-list!"));
+        return Err(anyhow!(
+            "Ooops, Cannot delete component main, Please don't play apt-gen-list!"
+        ));
     }
-
     apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
