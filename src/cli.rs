@@ -75,4 +75,8 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("mirrors-speedtest")
                 .about("Get mirrors speedtest")
         )
+        .subcommand(
+            SubCommand::with_name("set-fastest-mirror")
+                .about("Set fastest mirror to apt sources.list")
+        )
 }
