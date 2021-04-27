@@ -229,16 +229,10 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
 
 fn mirror_speedtest(mirror_name: &str) -> Result<f32> {
     let start = Instant::now();
-    let end;
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    let resp = attohttpc::get(download_url).send()?;
-    if resp.is_success() {
-        end = Instant::now();
-    } else {
-        return Err(anyhow!("download fail!"));
-    }
-    let time = start.elapsed().as_secs_f32() - end.elapsed().as_secs_f32();
+    attohttpc::get(download_url).send()?;
+    let time = start.elapsed().as_secs_f32();
     Ok(time)
     /*let mut file = fs::File::create("/tmp/u-boot-sunxi-with-spl.bin")?;
     copy(&mut resp.text()?.as_bytes(), &mut file)?;
