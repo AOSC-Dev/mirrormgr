@@ -81,7 +81,7 @@ fn main() -> Result<()> {
         }
         ("mirrors-speedtest", _) => {
             for (mirror_name, _) in get_mirrors_hashmap()? {
-                println!("Testing mirror: {}...", mirror_name);
+                println!("Testing mirror: {} ...", mirror_name);
                 if let Ok(time) = mirror_speedtest(mirror_name.as_str()) {
                     println!("time: {}s", time);
                 } else {
@@ -240,7 +240,10 @@ fn mirror_speedtest(mirror_name: &str) -> Result<f32> {
         return Ok(start.elapsed().as_secs_f32());
     }
 
-    Err(anyhow!("Response mirror: {} failed!", mirror_name))
+    Err(anyhow!(
+        "Response mirror: {} failed! Network error or timeout!",
+        mirror_name
+    ))
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
