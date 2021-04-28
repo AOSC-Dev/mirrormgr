@@ -84,8 +84,8 @@ fn main() -> Result<()> {
                 }
             }
         }
-        ("set-fastest-mirror", _) => {
-            set_fastest_mirror(status)?;
+        ("set-fastest-mirror-as-default", _) => {
+            set_fastest_mirror_to_default(status)?;
         }
         _ => {
             unreachable!()
@@ -95,7 +95,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
+fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
     println!("Gathering speedtest results, please wait...");
     let mut mirrors_score_table = HashMap::new();
     for (mirror_name, _) in get_mirrors_hashmap()? {
