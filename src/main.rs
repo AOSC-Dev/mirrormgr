@@ -43,8 +43,8 @@ fn main() -> Result<()> {
     match app.subcommand() {
         ("status", _) => {
             println!("Branch: {}", status.branch);
-            println!("component: {}", status.component.join(", "));
-            println!("mirror: {}", status.component.join(", "));
+            println!("Component: {}", status.component.join(", "));
+            println!("Mirror: {}", status.component.join(", "));
         }
         ("set-mirror", Some(args)) => {
             set_mirror(args.value_of("INPUT").unwrap(), &mut status)?;
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
             {
                 status.branch = new_branch.to_string();
             } else {
-                return Err(anyhow!("branch doesn't exist!"));
+                return Err(anyhow!("Branch undefined or does not exist!"));
             }
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
@@ -77,9 +77,9 @@ fn main() -> Result<()> {
             for (mirror_name, _) in get_mirrors_hashmap()? {
                 println!("Testing mirror: {} ...", mirror_name);
                 if let Ok(time) = get_mirror_speed_score(mirror_name.as_str()) {
-                    println!("score: {}s", time);
+                    println!("Speed: {}s", time);
                 } else {
-                    println!("Response {} failed!", mirror_name);
+                    println!("Failed to test mirror: {}!", mirror_name);
                     continue;
                 }
             }
@@ -96,7 +96,7 @@ fn main() -> Result<()> {
 }
 
 fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
-    println!("Getting mirror score, Please wait...");
+    println!("Gathering speedtest results, please wait...");
     let mut mirrors_score_table = HashMap::new();
     for (mirror_name, _) in get_mirrors_hashmap()? {
         if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
@@ -111,11 +111,11 @@ fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
     }
     if fastest_mirror.1 == 11.0 {
         return Err(anyhow!(
-            "Get all mirrors failed! Please check your network connect!"
+            "Timed out speedtesting mirror. Please check your network connection!"
         ));
     }
     println!(
-        "Fastest mirror: {}, score: {}s, Setting {} as mirror...",
+        "Fastest mirror: {}, speed: {}s, Setting {} as default mirror...",
         fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
     );
     set_mirror(fastest_mirror.0.as_str(), &mut status)?;
@@ -132,13 +132,13 @@ fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error
 
 fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
     if status.mirror.len() == 1 {
-        return Err(anyhow!("only have 1 mirror! cannot delete it!!!"));
+        return Err(anyhow!("You only have one mirror left, refusing to remove!"));
     }
     for i in args.values_of("INPUT").unwrap() {
         if let Some(index) = status.mirror.iter().position(|v| v == i) {
             status.mirror.remove(index);
         } else {
-            return Err(anyhow!("Cannot find mirror: {}", i));
+            return Err(anyhow!("Cannot find mirror: {}.", i));
         }
     }
     apply_status(&*status, gen_sources_list_string(&status)?)?;
@@ -149,7 +149,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
 fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
     for i in args.values_of("INPUT").unwrap() {
         if status.mirror.contains(&i.to_string()) {
-            return Err(anyhow!("mirror already exist!"));
+            return Err(anyhow!("Mirror already enabled!"));
         } else {
             status.mirror.push(i.to_string());
         }
@@ -166,12 +166,12 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             if let Some(index) = status.component.iter().position(|v| v == i) {
                 status.component.remove(index);
             } else {
-                return Err(anyhow!("Component: {} doesn't exist in component.", &i));
+                return Err(anyhow!("Component {} is not enabled or does not exist.", &i));
             }
         }
     } else {
         return Err(anyhow!(
-            "Ooops, Cannot delete component main, Please don't play apt-gen-list!"
+            "Refusing to remove essential component \"main\"."
         ));
     }
     apply_status(&status, gen_sources_list_string(&status)?)?;
@@ -182,9 +182,9 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
 fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
     for i in args.values_of("INPUT").unwrap() {
         if status.component.contains(&i.to_string()) {
-            return Err(anyhow!("{} already exist in component.", &i));
+            return Err(anyhow!("Component {} is already enabled.", &i));
         } else if read_distro_file(REPO_COMPONENT_FILE)?.get(i).is_none() {
-            return Err(anyhow!("{} is not option.", &i));
+            return Err(anyhow!("Component {} does not exist.", &i));
         } else {
             status.component.push(i.to_string());
         }
@@ -214,7 +214,7 @@ fn read_distro_file(file: &str) -> Result<Value> {
     }
 
     Err(anyhow!(
-        "distro repo data not found! Pleease check your aosc-os-repository-data package."
+        "Could not find repository data, please check your aosc-os-repository-data installation."
     ))
 }
 
@@ -232,7 +232,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = String::from("# Generated by apt-gen-list. DO NOT EDIT THIS FILE! \n");
     for i in &status.mirror {
         let mirror_url = get_mirror_url(i.as_str())?;
-        let arch = get_arch_name().ok_or_else(|| anyhow!("AOSC OS doesn't support this arch!"))?;
+        let arch = get_arch_name().ok_or_else(|| anyhow!("AOSC OS doesn't support this architecture!"))?;
         let directory_name = if vec!["amd64", "arm64", "ppc64el", "loongson3"].contains(&arch) {
             "debs"
         } else {
@@ -255,7 +255,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
 fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
     let mirrors = read_distro_file(REPO_MIRROR_FILE)?;
     let mirrors = mirrors.as_mapping().ok_or_else(|| {
-        anyhow!("distro file broken! Please check your aosc-os-repository-data package!")
+        anyhow!("Repository data corrupted, please check your aosc-os-repository-data installation!")
     })?;
     let mut mirrors_map = HashMap::new();
     for (k, _) in mirrors {
@@ -280,7 +280,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     }
 
     Err(anyhow!(
-        "Response mirror: {} failed! Network error or timeout!",
+        "Failed to download from {}, please check your network connection!",
         mirror_name
     ))
 }
@@ -291,11 +291,11 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     }
     let mirror_url = read_distro_file(REPO_MIRROR_FILE)?
         .get(mirror_name)
-        .ok_or_else(|| anyhow!("mirror doesn't exist!"))?
+        .ok_or_else(|| anyhow!("Mirror does not exist!"))?
         .get("url")
-        .ok_or_else(|| anyhow!("No url found on value!"))?
+        .ok_or_else(|| anyhow!("URL is not defined!"))?
         .as_str()
-        .ok_or_else(|| anyhow!("Url isn't String!"))?
+        .ok_or_else(|| anyhow!("URL is not a string!"))?
         .to_owned();
 
     Ok(mirror_url)
@@ -304,14 +304,14 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
     let branch_suites = read_distro_file(REPO_BRANCH_FILE)?
         .get(branch_name)
-        .ok_or_else(|| anyhow!("branch doesn't exist!"))?
+        .ok_or_else(|| anyhow!("Branch does not exist!"))?
         .get("suites")
         .ok_or_else(|| {
-            anyhow!("suites doesn't exist! Please check your aosc-os-repository-data package!")
+            anyhow!("\"suites\" does not exist, please check your aosc-os-repository-data installation!")
         })?
         .as_sequence()
         .ok_or_else(|| {
-            anyhow!("suites isn't arrays! Please check your aosc-os-repository-data package!")
+            anyhow!("\"suites\" is not an array, please check your aosc-os-repository-data installation!")
         })?
         .to_owned();
 
@@ -321,7 +321,7 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
             suites.push(i.to_string());
         } else {
             return Err(anyhow!(
-                "suites broken! Please check your aosc-os-repository-data package!"
+                "\"suites\" data corrupted, please check your aosc-os-repository-data installation!"
             ));
         }
     }

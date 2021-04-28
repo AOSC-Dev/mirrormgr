@@ -6,21 +6,21 @@ pub fn build_cli() -> App<'static, 'static> {
         .version(crate_version!())
         .author("AOSC-Dev")
         .about(
-            "Utility for generating sources.list for APT according to available repository configurations."
+            "Utility for generating APT sources.list from available repository configurations."
         )
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("set-branch")
-                .about("Add the APT source.list branch eg: stable")
+                .about("Set APT repository branch (e.g., stable)")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Add the input branch name to use")
+                        .help("Input branch name here")
                         .max_values(1),
                 ),
         )
         .subcommand(
             SubCommand::with_name("set-mirror")
-                .about("Set the APT source mirror")
+                .about("Set APT repository mirror")
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
@@ -29,7 +29,7 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("add-mirror")
-                .about("Set the multi APT source mirror")
+                .about("Add additional APT repository mirror")
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
@@ -38,7 +38,7 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("remove-mirror")
-                .about("Remove the APT source mirror (only use multi mirror)")
+                .about("Remove APT repository mirror")
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
@@ -47,36 +47,36 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("set-mirror-to-default")
-                .about("Set the APT source mirror to default")
+                .about("Set default APT repository mirror")
         )
         .subcommand(
             SubCommand::with_name("status")
-                .about("Get apt-gen-list status")
+                .about("Show apt-gen-list status")
         )
         .subcommand(
             SubCommand::with_name("add-component")
-                .about("Set the APT source mirror component")
+                .about("Set APT repository component")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Add source.list component")
+                        .help("Input component name")
                         .min_values(1),
                 ),
         )
         .subcommand(
             SubCommand::with_name("remove-component")
-                .about("Remove the APT source mirror component")
+                .about("Remove APT repository component")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Remove source.list component")
+                        .help("Input component name to be removed")
                         .min_values(1),
                 ),
         )
         .subcommand(
             SubCommand::with_name("mirrors-speedtest")
-                .about("Get mirrors speedtest")
+                .about("Run speed-test on available mirrors")
         )
         .subcommand(
             SubCommand::with_name("set-fastest-mirror")
-                .about("Set fastest mirror to apt sources.list")
+                .about("Set fastest mirror as default")
         )
 }
