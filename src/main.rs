@@ -115,7 +115,7 @@ fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error
         ));
     }
     println!(
-        "Fastest mirror: {}, speed: {}s, Setting {} as default mirror...",
+        "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
         fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
     );
     set_mirror(fastest_mirror.0.as_str(), &mut status)?;
@@ -143,7 +143,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             return Err(anyhow!("Cannot find mirror: {}.", i));
         }
     }
-    println!("Removing {} from mirror list...", entry.join(", "));
+    println!("Removing {} from sources.list ...", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
@@ -158,7 +158,7 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
             status.mirror.push(i.to_string());
         }
     }
-    println!("Adding {:?} to mirror list!", entry.join(", "));
+    println!("Adding mirror {:?} to sources.list ...", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
@@ -179,7 +179,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             "Refusing to remove essential component \"main\"."
         ));
     }
-    println!("Removing {} from component list...", entry.join(", "));
+    println!("Disabling component {} ...", entry.join(", "));
     apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
@@ -196,7 +196,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             status.component.push(i.to_string());
         }
     }
-    println!("Adding {} to component list...", entry.join(", "));
+    println!("Enabling component {} ...", entry.join(", "));
     apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
@@ -227,12 +227,12 @@ fn read_distro_file(file: &str) -> Result<Value> {
 }
 
 fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
-    println!("Writting to apt-gen-list status file ...");
+    println!("Writing to apt-gen-list status file ...");
     fs::write(
         STATUS_FILE,
         format!("{} \n", serde_json::to_string(&status)?),
     )?;
-    println!("Writting to /etc/apt/sources.list ...");
+    println!("Writing /etc/apt/sources.list ...");
     fs::write(APT_SOURCE_FILE, source_list_str)?;
 
     Ok(())
