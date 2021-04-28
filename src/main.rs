@@ -125,6 +125,7 @@ fn set_fastest_mirror(mut status: Status) -> Result<(), anyhow::Error> {
 
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error> {
     status.mirror = vec![new_mirror.to_string()];
+    println!("Setting {} as mirror!", new_mirror);
     apply_status(&*status, gen_sources_list_string(&*status)?)?;
 
     Ok(())
@@ -134,35 +135,39 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     if status.mirror.len() == 1 {
         return Err(anyhow!("You only have one mirror left, refusing to remove!"));
     }
-    for i in args.values_of("INPUT").unwrap() {
+    let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    for i in &entry {
         if let Some(index) = status.mirror.iter().position(|v| v == i) {
             status.mirror.remove(index);
         } else {
             return Err(anyhow!("Cannot find mirror: {}.", i));
         }
     }
+    println!("Removing {} from mirror list...", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
 
 fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
-    for i in args.values_of("INPUT").unwrap() {
+    let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    for i in &entry {
         if status.mirror.contains(&i.to_string()) {
             return Err(anyhow!("Mirror already enabled!"));
         } else {
             status.mirror.push(i.to_string());
         }
     }
+    println!("Adding {:?} to mirror list!", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
-    let remove_components: Vec<&str> = args.values_of("INPUT").unwrap().collect();
-    if !remove_components.contains(&"main") {
-        for i in remove_components {
+    let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    if !entry.contains(&"main") {
+        for i in &entry {
             if let Some(index) = status.component.iter().position(|v| v == i) {
                 status.component.remove(index);
             } else {
@@ -174,13 +179,15 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             "Refusing to remove essential component \"main\"."
         ));
     }
+    println!("Removing {} from component list...", entry.join(", "));
     apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
 }
 
 fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
-    for i in args.values_of("INPUT").unwrap() {
+    let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    for i in &entry {
         if status.component.contains(&i.to_string()) {
             return Err(anyhow!("Component {} is already enabled.", &i));
         } else if read_distro_file(REPO_COMPONENT_FILE)?.get(i).is_none() {
@@ -189,6 +196,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
             status.component.push(i.to_string());
         }
     }
+    println!("Adding {} to component list...", entry.join(", "));
     apply_status(&status, gen_sources_list_string(&status)?)?;
 
     Ok(())
@@ -219,10 +227,12 @@ fn read_distro_file(file: &str) -> Result<Value> {
 }
 
 fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
+    println!("Writting to apt-gen-list status file ...");
     fs::write(
         STATUS_FILE,
         format!("{} \n", serde_json::to_string(&status)?),
     )?;
+    println!("Writting to /etc/apt/sources.list ...");
     fs::write(APT_SOURCE_FILE, source_list_str)?;
 
     Ok(())
