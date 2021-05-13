@@ -19,6 +19,7 @@ const REPO_COMPONENT_FILE: &str = "/usr/share/distro-repository-data/comps.yml";
 const REPO_BRANCH_FILE: &str = "/usr/share/distro-repository-data/branches.yml";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
+const UNREACHABLE_TIME: f32 = 11.0;
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -117,13 +118,13 @@ fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error
             mirrors_score_table.insert(mirror_name, score);
         }
     }
-    let mut fastest_mirror = (String::new(), 11.0);
+    let mut fastest_mirror = (String::new(), UNREACHABLE_TIME);
     for (mirror_name, score) in mirrors_score_table {
         if score < fastest_mirror.1 {
             fastest_mirror = (mirror_name, score);
         }
     }
-    if fastest_mirror.1 == 11.0 {
+    if fastest_mirror.1 == UNREACHABLE_TIME {
         return Err(anyhow!(
             "Timed out speedtesting mirror. Please check your network connection!"
         ));
