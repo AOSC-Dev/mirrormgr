@@ -18,6 +18,7 @@ const REPO_MIRROR_FILE: &str = "/usr/share/distro-repository-data/mirrors.yml";
 const REPO_COMPONENT_FILE: &str = "/usr/share/distro-repository-data/comps.yml";
 const REPO_BRANCH_FILE: &str = "/usr/share/distro-repository-data/branches.yml";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
+const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -90,6 +91,16 @@ fn main() -> Result<()> {
         ("set-fastest-mirror-as-default", _) => {
             set_fastest_mirror_to_default(status)?;
         }
+        ("add-custom-mirror", Some(args)) => {
+            let custom_mirror_args: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+            add_custom_mirror(custom_mirror_args[0], custom_mirror_args[1])?;
+        }
+        ("remove-custom-mirror", Some(args)) => {
+            let custom_mirror_args = args.values_of("INPUT").unwrap();
+            for entry in custom_mirror_args {
+                remove_custom_mirror(entry)?;
+            }
+        }
         _ => {
             unreachable!()
         }
@@ -158,7 +169,10 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
     let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
     for i in &entry {
         let mirror_url = get_mirror_url(i)?;
-        if status.mirror.contains(&(i.to_string(), mirror_url.to_owned())) {
+        if status
+            .mirror
+            .contains(&(i.to_string(), mirror_url.to_owned()))
+        {
             return Err(anyhow!("Mirror already enabled!"));
         } else {
             status.mirror.push((i.to_string(), mirror_url));
@@ -168,6 +182,58 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
+}
+
+fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
+    if mirror_name.contains(":") {
+        return Err(anyhow!("syntax error: your mirror_name have: \":\""));
+    }
+    let custom_mirror_data = read_custom_mirror()?;
+    let mut custom_mirror_data: Vec<&str> = custom_mirror_data.split("\n").collect();
+    let new_mirror = format!("{}: {}", mirror_name, mirror_url);
+    if let Some(index) = custom_mirror_data.iter().position(|v| v == &"") {
+        custom_mirror_data.remove(index);
+    }
+    if !custom_mirror_data.contains(&new_mirror.as_str()) {
+        custom_mirror_data.push(&new_mirror)
+    } else {
+        return Err(anyhow!("custom mirror {} does exist!", mirror_name));
+    }
+    println!("Adding custom mirror {} to {}", mirror_name, CUSTOM_MIRROR_FILE);
+    fs::write(CUSTOM_MIRROR_FILE, custom_mirror_data.join("\n"))?;
+
+    Ok(())
+}
+
+fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
+    let custom_mirror = read_custom_mirror()?;
+    let mut custom_mirror: Vec<&str> = custom_mirror.split("\n").collect();
+    if let Some(index) = custom_mirror.iter().position(|v| v == &"") {
+        custom_mirror.remove(index);
+    }
+    if !custom_mirror.contains(&mirror_name) {
+        return Err(anyhow!("custom mirror {} does not exist!", mirror_name))
+    }
+    if let Some(index) = custom_mirror
+        .iter()
+        .position(|v| v.starts_with(format!("{}:", mirror_name).as_str()))
+    {
+        custom_mirror.remove(index);
+    }
+    println!("Removing custom mirror {} from {}", mirror_name, CUSTOM_MIRROR_FILE);
+    fs::write(CUSTOM_MIRROR_FILE, custom_mirror.join("\n"))?;
+
+    Ok(())
+}
+
+fn read_custom_mirror() -> Result<String> {
+    if let Ok(file_data) = fs::read_to_string(CUSTOM_MIRROR_FILE) {
+        return Ok(file_data);
+    }
+    fs::create_dir_all("/etc/apt-gen-list")?;
+    fs::File::create(CUSTOM_MIRROR_FILE)?;
+
+    Ok(read_custom_mirror()?)
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
@@ -282,6 +348,19 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
             mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
         }
     }
+    if let Ok(custom_mirrors) = read_distro_file(CUSTOM_MIRROR_FILE) {
+        let custom_mirrors = custom_mirrors.as_mapping().ok_or_else(|| {
+            anyhow!(
+                "Custom repository data corrupted, please check your aosc-os-repository-data installation!"
+            )
+        })?;
+        for (k, _) in custom_mirrors {
+            if let Some(mirror_name) = k.as_str() {
+                mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
+            }
+        }
+        return Ok(mirrors_map);
+    }
 
     Ok(mirrors_map)
 }
@@ -305,19 +384,21 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    if Url::parse(mirror_name).is_ok() {
-        return Ok(mirror_name.to_string());
+    if let Some(mirror_url) = read_distro_file(REPO_MIRROR_FILE)?.get(mirror_name) {
+        return Ok(mirror_url
+            .get("url")
+            .ok_or_else(|| anyhow!("URL is not defined!"))?
+            .as_str()
+            .ok_or_else(|| anyhow!("URL is not a string!"))?
+            .to_owned());
+    } else {
+        return Ok(read_distro_file(CUSTOM_MIRROR_FILE)?
+            .get(mirror_name)
+            .ok_or_else(|| anyhow!("URL is defined!"))?
+            .as_str()
+            .ok_or_else(|| anyhow!("URL is not a string!"))?
+            .to_owned());
     }
-    let mirror_url = read_distro_file(REPO_MIRROR_FILE)?
-        .get(mirror_name)
-        .ok_or_else(|| anyhow!("Mirror does not exist!"))?
-        .get("url")
-        .ok_or_else(|| anyhow!("URL is not defined!"))?
-        .as_str()
-        .ok_or_else(|| anyhow!("URL is not a string!"))?
-        .to_owned();
-
-    Ok(mirror_url)
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {

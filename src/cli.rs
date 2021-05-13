@@ -72,6 +72,25 @@ pub fn build_cli() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("add-custom-mirror")
+                .about("Add custom mirror")
+                .arg(
+                    Arg::with_name("INPUT")
+                        .help("Input component mirror name and mirror url to add custom mirror list")
+                        .min_values(2)
+                        .max_values(2),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("remove-custom-mirror")
+                .about("Add custom mirror")
+                .arg(
+                    Arg::with_name("INPUT")
+                        .help("Input component mirror name to remove it on custom mirror list")
+                        .min_values(1),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name("mirrors-speedtest")
                 .about("Run speed-test on available mirrors")
         )
