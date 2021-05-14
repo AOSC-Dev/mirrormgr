@@ -190,6 +190,9 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
         return Err(anyhow!("syntax error: your mirror_name have: \":\""));
     }
     let mut custom_mirror_data = read_custom_mirror()?;
+    if Url::parse(mirror_url).is_err() {
+        return Err(anyhow!("syntax error: mirror_url is not URL!"));
+    }
     let new_mirror = format!("{}: {}", mirror_name, mirror_url);
     if !custom_mirror_data.contains(&new_mirror) {
         custom_mirror_data.push(new_mirror)
@@ -401,7 +404,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     } else {
         return Ok(read_distro_file(CUSTOM_MIRROR_FILE)?
             .get(mirror_name)
-            .ok_or_else(|| anyhow!("URL is defined!"))?
+            .ok_or_else(|| anyhow!("URL is not defined!"))?
             .as_str()
             .ok_or_else(|| anyhow!("URL is not a string!"))?
             .to_owned());
