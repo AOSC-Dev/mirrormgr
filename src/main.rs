@@ -189,31 +189,30 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     if mirror_name.contains(":") {
         return Err(anyhow!("syntax error: your mirror_name have: \":\""));
     }
-    let custom_mirror_data = read_custom_mirror()?;
-    let mut custom_mirror_data: Vec<&str> = custom_mirror_data.split("\n").collect();
+    let mut custom_mirror_data = read_custom_mirror()?;
     let new_mirror = format!("{}: {}", mirror_name, mirror_url);
-    if let Some(index) = custom_mirror_data.iter().position(|v| v == &"") {
-        custom_mirror_data.remove(index);
-    }
-    if !custom_mirror_data.contains(&new_mirror.as_str()) {
-        custom_mirror_data.push(&new_mirror)
+    if !custom_mirror_data.contains(&new_mirror) {
+        custom_mirror_data.push(new_mirror)
     } else {
         return Err(anyhow!("custom mirror {} does exist!", mirror_name));
     }
-    println!("Adding custom mirror {} to {}", mirror_name, CUSTOM_MIRROR_FILE);
+    println!(
+        "Adding custom mirror {} to {}",
+        mirror_name, CUSTOM_MIRROR_FILE
+    );
     fs::write(CUSTOM_MIRROR_FILE, custom_mirror_data.join("\n"))?;
 
     Ok(())
 }
 
 fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
-    let custom_mirror = read_custom_mirror()?;
-    let mut custom_mirror: Vec<&str> = custom_mirror.split("\n").collect();
-    if let Some(index) = custom_mirror.iter().position(|v| v == &"") {
-        custom_mirror.remove(index);
-    }
-    if !custom_mirror.contains(&mirror_name) {
-        return Err(anyhow!("custom mirror {} does not exist!", mirror_name))
+    let mut custom_mirror = read_custom_mirror()?;
+    if !custom_mirror.contains(&format!(
+        "{}: {}",
+        mirror_name,
+        get_mirror_url(mirror_name)?
+    )) {
+        return Err(anyhow!("custom mirror {} does not exist!", mirror_name));
     }
     if let Some(index) = custom_mirror
         .iter()
@@ -221,15 +220,23 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     {
         custom_mirror.remove(index);
     }
-    println!("Removing custom mirror {} from {}", mirror_name, CUSTOM_MIRROR_FILE);
+    println!(
+        "Removing custom mirror {} from {}",
+        mirror_name, CUSTOM_MIRROR_FILE
+    );
     fs::write(CUSTOM_MIRROR_FILE, custom_mirror.join("\n"))?;
 
     Ok(())
 }
 
-fn read_custom_mirror() -> Result<String> {
+fn read_custom_mirror() -> Result<Vec<String>> {
     if let Ok(file_data) = fs::read_to_string(CUSTOM_MIRROR_FILE) {
-        return Ok(file_data);
+        return Ok(file_data
+            .split("\n")
+            .into_iter()
+            .map(|x| x.into())
+            .filter(|x| x != &"")
+            .collect());
     }
     fs::create_dir_all("/etc/apt-gen-list")?;
     fs::File::create(CUSTOM_MIRROR_FILE)?;
@@ -360,7 +367,6 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
                 mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
             }
         }
-        return Ok(mirrors_map);
     }
 
     Ok(mirrors_map)
