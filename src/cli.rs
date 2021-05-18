@@ -73,20 +73,20 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("add-custom-mirror")
-                .about("Add custom mirror")
+                .about("Add custom repository mirror")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Input component mirror name and mirror url to add custom mirror list")
+                        .help("Input custom repository mirror name and mirror url to add a custom mirror")
                         .min_values(2)
                         .max_values(2),
                 ),
         )
         .subcommand(
             SubCommand::with_name("remove-custom-mirror")
-                .about("Add custom mirror")
+                .about("Remove custom repository mirror")
                 .arg(
                     Arg::with_name("INPUT")
-                        .help("Input component mirror name to remove it on custom mirror list")
+                        .help("Input custom repository mirror name to remove from the list of custom mirrors")
                         .min_values(1),
                 ),
         )

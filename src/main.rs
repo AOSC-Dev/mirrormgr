@@ -187,17 +187,17 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     if mirror_name.contains(":") {
-        return Err(anyhow!("syntax error: your mirror_name have: \":\""));
+        return Err(anyhow!("Your mirror_name contains invalid symbol \":\""));
     }
     let mut custom_mirror_data = read_custom_mirror()?;
     if Url::parse(mirror_url).is_err() {
-        return Err(anyhow!("syntax error: mirror_url is not URL!"));
+        return Err(anyhow!("mirror_url is not a URL!"));
     }
     let new_mirror = format!("{}: {}", mirror_name, mirror_url);
     if !custom_mirror_data.contains(&new_mirror) {
         custom_mirror_data.push(new_mirror)
     } else {
-        return Err(anyhow!("custom mirror {} does exist!", mirror_name));
+        return Err(anyhow!("Custom mirror {} already exists!", mirror_name));
     }
     println!(
         "Adding custom mirror {} to {}",
@@ -215,7 +215,7 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
         mirror_name,
         get_mirror_url(mirror_name)?
     )) {
-        return Err(anyhow!("custom mirror {} does not exist!", mirror_name));
+        return Err(anyhow!("Custom mirror {} does not exist!", mirror_name));
     }
     if let Some(index) = custom_mirror
         .iter()
