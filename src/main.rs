@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use attohttpc;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
@@ -13,10 +14,14 @@ use url::Url;
 
 mod cli;
 
+lazy_static! {
+    static ref REPO_DATA_DIRECTORY: String = get_repo_data_path();
+    static ref REPO_MIRROR_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"mirrors.yml";
+    static ref REPO_COMPONENT_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"comps.yml";
+    static ref REPO_BRANCH_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"branches.yml";
+}
+
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
-const REPO_MIRROR_FILE: &str = "/usr/share/distro-repository-data/mirrors.yml";
-const REPO_COMPONENT_FILE: &str = "/usr/share/distro-repository-data/comps.yml";
-const REPO_BRANCH_FILE: &str = "/usr/share/distro-repository-data/branches.yml";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const UNREACHABLE_TIME: f32 = 11.0;
@@ -67,7 +72,7 @@ fn main() -> Result<()> {
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("INPUT").unwrap();
-            if read_distro_file(REPO_BRANCH_FILE)?
+            if read_distro_file(REPO_BRANCH_FILE.to_string())?
                 .get(new_branch)
                 .is_some()
             {
@@ -108,6 +113,17 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn get_repo_data_path() -> String {
+    let not_local_directory_path = String::from("/usr/share/distro-repository-data/");
+    if let Ok(v) = fs::metadata(&not_local_directory_path) {
+        if v.is_dir() {
+            return not_local_directory_path;
+        }
+    }
+
+    return String::from("/usr/local/share/distro-repository-data/");
 }
 
 fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
@@ -274,7 +290,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     for i in &entry {
         if status.component.contains(&i.to_string()) {
             return Err(anyhow!("Component {} is already enabled.", &i));
-        } else if read_distro_file(REPO_COMPONENT_FILE)?.get(i).is_none() {
+        } else if read_distro_file(REPO_COMPONENT_FILE.to_string())?.get(i).is_none() {
             return Err(anyhow!("Component {} does not exist.", &i));
         } else {
             status.component.push(i.to_string());
@@ -300,7 +316,7 @@ fn read_status() -> Result<Status> {
     Ok(status)
 }
 
-fn read_distro_file(file: &str) -> Result<Value> {
+fn read_distro_file(file: String) -> Result<Value> {
     if let Ok(file_data) = fs::read(file) {
         return Ok(serde_yaml::from_slice(&file_data)?);
     }
@@ -347,7 +363,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
 }
 
 fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
-    let mirrors = read_distro_file(REPO_MIRROR_FILE)?;
+    let mirrors = read_distro_file(REPO_MIRROR_FILE.to_string())?;
     let mirrors = mirrors.as_mapping().ok_or_else(|| {
         anyhow!(
             "Repository data corrupted, please check your aosc-os-repository-data installation!"
@@ -359,7 +375,7 @@ fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
             mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
         }
     }
-    if let Ok(custom_mirrors) = read_distro_file(CUSTOM_MIRROR_FILE) {
+    if let Ok(custom_mirrors) = read_distro_file(CUSTOM_MIRROR_FILE.to_string()) {
         let custom_mirrors = custom_mirrors.as_mapping().ok_or_else(|| {
             anyhow!(
                 "Custom repository data corrupted, please check your aosc-os-repository-data installation!"
@@ -394,7 +410,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    if let Some(mirror_url) = read_distro_file(REPO_MIRROR_FILE)?.get(mirror_name) {
+    if let Some(mirror_url) = read_distro_file(REPO_MIRROR_FILE.to_string())?.get(mirror_name) {
         return Ok(mirror_url
             .get("url")
             .ok_or_else(|| anyhow!("URL is not defined!"))?
@@ -402,7 +418,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
             .ok_or_else(|| anyhow!("URL is not a string!"))?
             .to_owned());
     } else {
-        return Ok(read_distro_file(CUSTOM_MIRROR_FILE)?
+        return Ok(read_distro_file(CUSTOM_MIRROR_FILE.to_string())?
             .get(mirror_name)
             .ok_or_else(|| anyhow!("URL is not defined!"))?
             .as_str()
@@ -412,7 +428,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
-    let branch_suites = read_distro_file(REPO_BRANCH_FILE)?
+    let branch_suites = read_distro_file(REPO_BRANCH_FILE.to_string())?
         .get(branch_name)
         .ok_or_else(|| anyhow!("Branch does not exist!"))?
         .get("suites")

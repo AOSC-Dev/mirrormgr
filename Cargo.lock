@@ -28,6 +28,7 @@ dependencies = [
  "anyhow",
  "attohttpc",
  "clap",
+ "lazy_static",
  "serde",
  "serde_json",
  "serde_yaml",
