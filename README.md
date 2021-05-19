@@ -12,7 +12,7 @@ $ cargo build --release
 # install -Dvm755 target/release/apt-gen-list-rs /usr/local/bin/apt-gen-list
 
 // install repo data, eg aosc:
-git clone https://github.com/AOSC-Dev/aosc-os-repository-data.git
+$ git clone https://github.com/AOSC-Dev/aosc-os-repository-data.git
 # mkdir -pv /usr/local/share/distro-repository-data/
 # install -Dvm644 aosc-os-repository-data/* -t /usr/local/share/distro-repository-data/
 ```
