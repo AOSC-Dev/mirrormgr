@@ -1,12 +1,12 @@
 # apt-gen-list-rs
 Utility for generating sources.list for APT according to repository configurations (Rust version)
 
-# Menual
+## Menual
 ```
 apt-gen-list --help
 ```
 
-# Installation
+## Installation
 ```
 $ cargo build --release
 # install -Dvm755 target/release/apt-gen-list-rs /usr/local/bin/apt-gen-list
@@ -17,7 +17,7 @@ git clone https://github.com/AOSC-Dev/aosc-os-repository-data.git
 # install -Dvm644 aosc-os-repository-data/* -t /usr/local/share/distro-repository-data/
 ```
 
-# Dependencies
+## Dependencies
 
 Building:
 - Rust w/ Cargo
