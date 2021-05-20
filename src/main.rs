@@ -459,8 +459,8 @@ fn get_directory_name() -> Result<&'static str> {
                 return match i.replace("NAME=", "").as_str() {
                     "\"AOSC OS\"" => Ok("debs"),
                     "\"AOSC OS/Retro\"" => Ok("debs-retro"),
-                    _ => Ok("")
-                }
+                    _ => Ok(""),
+                };
             }
         }
     }
