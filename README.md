@@ -1,7 +1,7 @@
 # apt-gen-list-rs
 Utility for generating sources.list for APT according to repository configurations (Rust version)
 
-## Menual
+## Manual
 ```
 apt-gen-list --help
 ```
