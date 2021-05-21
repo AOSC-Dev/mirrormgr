@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use attohttpc;
+use indicatif::ProgressBar;
 use lazy_static::lazy_static;
+use log::warn;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml::Value;
@@ -23,7 +25,6 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
-const UNREACHABLE_TIME: f32 = 11.0;
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -83,14 +84,10 @@ fn main() -> Result<()> {
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
         ("mirrors-speedtest", _) => {
-            for (mirror_name, _) in get_mirrors_hashmap()? {
-                println!("Testing mirror: {} ...", mirror_name);
-                if let Ok(time) = get_mirror_speed_score(mirror_name.as_str()) {
-                    println!("Speed: {}s", time);
-                } else {
-                    println!("Failed to test mirror: {}!", mirror_name);
-                    continue;
-                }
+            let mirrors_score_table = get_mirror_score_table()?;
+            println!("Mirror    Speed");
+            for (mirror_name, score) in mirrors_score_table {
+                println!("{:<10}{}s", mirror_name, score);
             }
         }
         ("set-fastest-mirror-as-default", _) => {
@@ -127,30 +124,37 @@ fn get_repo_data_path() -> String {
 
 fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
     println!("Gathering speedtest results, please wait...");
-    let mut mirrors_score_table = HashMap::new();
-    for (mirror_name, _) in get_mirrors_hashmap()? {
-        if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
-            mirrors_score_table.insert(mirror_name, score);
-        }
-    }
-    let mut fastest_mirror = (String::new(), UNREACHABLE_TIME);
-    for (mirror_name, score) in mirrors_score_table {
-        if score < fastest_mirror.1 {
-            fastest_mirror = (mirror_name, score);
-        }
-    }
-    if fastest_mirror.1 == UNREACHABLE_TIME {
-        return Err(anyhow!(
-            "Timed out speedtesting mirror. Please check your network connection!"
-        ));
-    }
+    let mirrors_score_table = get_mirror_score_table()?;
     println!(
         "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
-        fastest_mirror.0, fastest_mirror.1, fastest_mirror.0
+        mirrors_score_table[0].0, mirrors_score_table[0].1, mirrors_score_table[0].0
     );
-    set_mirror(fastest_mirror.0.as_str(), &mut status)?;
+    set_mirror(mirrors_score_table[0].0.as_str(), &mut status)?;
 
     Ok(())
+}
+
+fn get_mirror_score_table() -> Result<Vec<(String, f32)>, anyhow::Error> {
+    let mut mirrors_score_table = Vec::new();
+    let mirrors_hashmap = get_mirrors_hashmap()?;
+    let bar = ProgressBar::new_spinner();
+    bar.enable_steady_tick(50);
+    for (index, mirror_name) in mirrors_hashmap.keys().enumerate() {
+        bar.set_message(format!(
+            "Benchmarking {} ({}/{}) ...",
+            mirror_name,
+            index,
+            mirrors_hashmap.len()
+        ));
+        if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
+            mirrors_score_table.push((mirror_name.to_owned(), score));
+        } else {
+            warn!("Failed to test mirror: {}!", mirror_name);
+        }
+    }
+    bar.finish_and_clear();
+    mirrors_score_table.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+    Ok(mirrors_score_table)
 }
 
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error> {
