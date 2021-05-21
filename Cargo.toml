@@ -1,6 +1,6 @@
 [package]
 name = "apt-gen-list-rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["eatradish <sakiiily@aosc.io>"]
 edition = "2018"
 
