@@ -36,9 +36,15 @@ struct Status {
 }
 
 #[derive(Deserialize, Serialize)]
-struct BranchItem {
+struct BranchInfo {
     desc: String,
     suites: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct MirrorInfo {
+    desc: String,
+    url: String,
 }
 
 impl Default for Status {
@@ -272,6 +278,7 @@ fn read_custom_mirror() -> Result<HashMap<String, String>> {
     if let Ok(file_data) = fs::read(CUSTOM_MIRROR_FILE) {
         return Ok(serde_yaml::from_slice(&file_data)?);
     }
+
     Err(anyhow!("Cannot read custom mirror file!"))
 }
 
@@ -326,23 +333,18 @@ fn read_status() -> Result<Status> {
 }
 
 fn read_distro_components_file() -> Result<HashMap<String, String>> {
-    if let Ok(file_data) = fs::read(REPO_COMPONENT_FILE.to_string()) {
-        let file_data: HashMap<String, String> = serde_yaml::from_slice(&file_data)?;
-        return Ok(file_data);
-    }
-
-    Err(anyhow!(
-        "Could not find repository data, please check your aosc-os-repository-data installation."
-    ))
+    return Ok(serde_yaml::from_slice(&fs::read(
+        REPO_COMPONENT_FILE.to_string(),
+    )?)?);
 }
 
-fn read_distro_branches_file() -> Result<HashMap<String, BranchItem>> {
+fn read_distro_branches_file() -> Result<HashMap<String, BranchInfo>> {
     return Ok(serde_yaml::from_slice(&fs::read(
         REPO_BRANCH_FILE.to_string(),
     )?)?);
 }
 
-fn read_distro_mirrors_file() -> Result<HashMap<String, HashMap<String, String>>> {
+fn read_distro_mirrors_file() -> Result<HashMap<String, MirrorInfo>> {
     return Ok(serde_yaml::from_slice(&fs::read(
         REPO_MIRROR_FILE.to_string(),
     )?)?);
@@ -352,7 +354,7 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
     println!("Writing to apt-gen-list status file ...");
     fs::write(
         STATUS_FILE,
-        format!("{} \n", serde_json::to_string(&status)?),
+        format!("{}\n", serde_json::to_string(&status)?),
     )?;
     println!("Writing /etc/apt/sources.list ...");
     fs::write(APT_SOURCE_FILE, source_list_str)?;
@@ -399,10 +401,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
     if let Some(mirror_info) = read_distro_mirrors_file()?.get(mirror_name) {
-        return Ok(mirror_info
-            .get("url")
-            .ok_or_else(|| anyhow!("Cannot get URL!"))?
-            .to_owned());
+        return Ok(mirror_info.url.to_owned());
     } else if let Some(mirror_url) = read_custom_mirror()?.get(mirror_name) {
         return Ok(mirror_url.to_owned());
     }
