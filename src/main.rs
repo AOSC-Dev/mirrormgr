@@ -212,14 +212,21 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 }
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
-    let mut custom_mirror_data = read_custom_mirror()?;
+    let mut custom_mirror_data = match read_custom_mirror() {
+        Ok(v) => v,
+        Err(_) => {
+            let mut result = HashMap::new();
+            result.insert(mirror_name.to_string(), mirror_url.to_string());
+            result
+        }
+    };
     if Url::parse(mirror_url).is_err() {
         return Err(anyhow!("mirror_url is not a URL!"));
     }
     if custom_mirror_data.get(mirror_name).is_none() {
         custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
     } else {
-        return Err(anyhow!("Custom mirror {} already exists!", mirror_name));
+        warn!("Custom mirror {} already exists!", mirror_name);
     }
     println!(
         "Adding custom mirror {} to {}",
@@ -251,6 +258,9 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
 
 fn read_custom_mirror() -> Result<HashMap<String, String>> {
     if let Ok(file_data) = fs::read(CUSTOM_MIRROR_FILE) {
+        if fs::metadata(CUSTOM_MIRROR_FILE)?.len() == 0 {
+            fs::write(CUSTOM_MIRROR_FILE, "---\n")?;
+        }
         return Ok(serde_yaml::from_slice(&file_data)?);
     }
     fs::create_dir_all("/etc/apt-gen-list")?;
@@ -381,14 +391,16 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    let mirror_url = read_distro_mirrors_file()?
-        .get(mirror_name)
-        .ok_or_else(|| anyhow!("Cannot find mirror!"))?
-        .get("url")
-        .ok_or_else(|| anyhow!("Cannot get URL!"))?
-        .to_owned();
+    if let Some(mirror_info) = read_distro_mirrors_file()?.get(mirror_name) {
+        return Ok(mirror_info
+            .get("url")
+            .ok_or_else(|| anyhow!("Cannot get URL!"))?
+            .to_owned());
+    } else if let Some(mirror_url) = read_custom_mirror()?.get(mirror_name) {
+        return Ok(mirror_url.to_owned());
+    }
 
-    Ok(mirror_url)
+    Err(anyhow!("Cannot find mirror {}", mirror_name))
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
