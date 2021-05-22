@@ -180,7 +180,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
         if let Some(index) = status.mirror.iter().position(|v| &v.0 == i) {
             status.mirror.remove(index);
         } else {
-            return Err(anyhow!("Cannot find mirror: {}.", i));
+            warn!("Cannot find mirror: {}.", i);
         }
     }
     println!("Removing {} from sources.list ...", entry.join(", "));
@@ -191,18 +191,18 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
 
 fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
     let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
+    println!("Adding mirror {} to sources.list ...", entry.join(", "));
     for i in &entry {
         let mirror_url = get_mirror_url(i)?;
         if status
             .mirror
             .contains(&(i.to_string(), mirror_url.to_owned()))
         {
-            return Err(anyhow!("Mirror already enabled!"));
+           warn!("Mirror {} already enabled!", i);
         } else {
             status.mirror.push((i.to_string(), mirror_url));
         }
     }
-    println!("Adding mirror {} to sources.list ...", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
