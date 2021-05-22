@@ -277,10 +277,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
             if let Some(index) = status.component.iter().position(|v| v == i) {
                 status.component.remove(index);
             } else {
-                return Err(anyhow!(
-                    "Component {} is not enabled or does not exist.",
-                    &i
-                ));
+                warn!("Component {} is not enabled or does not exist.", &i);
             }
         }
     } else {
@@ -296,7 +293,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     let entry: Vec<&str> = args.values_of("INPUT").unwrap().collect();
     for i in &entry {
         if status.component.contains(&i.to_string()) {
-            return Err(anyhow!("Component {} is already enabled.", &i));
+            warn!("Component {} is already enabled.", &i);
         } else if read_distro_file(REPO_COMPONENT_FILE.to_string())?
             .get(i)
             .is_none()
