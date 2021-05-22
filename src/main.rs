@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use log::warn;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use serde_yaml::Value;
+use serde_yaml;
 use std::{
     collections::HashMap,
     fs,
@@ -31,6 +31,12 @@ struct Status {
     branch: String,
     component: Vec<String>,
     mirror: Vec<(String, String)>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct BranchItem {
+    desc: String,
+    suites: Vec<String>,
 }
 
 impl Default for Status {
@@ -72,7 +78,7 @@ fn main() -> Result<()> {
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("INPUT").unwrap();
-            if read_distro_file(REPO_BRANCH_FILE.to_string())?
+            if read_distro_branches_file()?
                 .get(new_branch)
                 .is_some()
             {
@@ -135,7 +141,7 @@ fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error
 
 fn get_mirror_score_table() -> Result<Vec<(String, f32)>, anyhow::Error> {
     let mut mirrors_score_table = Vec::new();
-    let mirrors_hashmap = get_mirrors_hashmap()?;
+    let mirrors_hashmap = read_distro_mirrors_file()?;
     let bar = ProgressBar::new_spinner();
     bar.enable_steady_tick(50);
     for (index, mirror_name) in mirrors_hashmap.keys().enumerate() {
@@ -198,7 +204,7 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
             .mirror
             .contains(&(i.to_string(), mirror_url.to_owned()))
         {
-           warn!("Mirror {} already enabled!", i);
+            warn!("Mirror {} already enabled!", i);
         } else {
             status.mirror.push((i.to_string(), mirror_url));
         }
@@ -294,13 +300,10 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     for i in &entry {
         if status.component.contains(&i.to_string()) {
             warn!("Component {} is already enabled.", &i);
-        } else if read_distro_file(REPO_COMPONENT_FILE.to_string())?
-            .get(i)
-            .is_none()
-        {
-            return Err(anyhow!("Component {} does not exist.", &i));
-        } else {
+        } else if read_distro_components_file()?.get(&i.to_string()).is_some() {
             status.component.push(i.to_string());
+        } else {
+            return Err(anyhow!("Component {} does not exist.", &i));
         }
     }
     println!("Enabling component {} ...", entry.join(", "));
@@ -323,9 +326,33 @@ fn read_status() -> Result<Status> {
     Ok(status)
 }
 
-fn read_distro_file(file: String) -> Result<Value> {
-    if let Ok(file_data) = fs::read(file) {
-        return Ok(serde_yaml::from_slice(&file_data)?);
+fn read_distro_components_file() -> Result<HashMap<String, String>> {
+    if let Ok(file_data) = fs::read(REPO_COMPONENT_FILE.to_string()) {
+        let file_data: HashMap<String, String> = serde_yaml::from_slice(&file_data)?;
+        return Ok(file_data);
+    }
+
+    Err(anyhow!(
+        "Could not find repository data, please check your aosc-os-repository-data installation."
+    ))
+}
+
+fn read_distro_branches_file() -> Result<HashMap<String, BranchItem>> {
+    if let Ok(file_data) = fs::read(REPO_BRANCH_FILE.to_string()) {
+        let file_data: HashMap<String, BranchItem> = serde_yaml::from_slice(&file_data)?;
+        return Ok(file_data);
+    }
+
+    Err(anyhow!(
+        "Could not find repository data, please check your aosc-os-repository-data installation."
+    ))
+}
+
+fn read_distro_mirrors_file() -> Result<HashMap<String, HashMap<String, String>>> {
+    if let Ok(file_data) = fs::read(REPO_MIRROR_FILE.to_string()) {
+        let file_data: HashMap<String, HashMap<String, String>> =
+            serde_yaml::from_slice(&file_data)?;
+        return Ok(file_data);
     }
 
     Err(anyhow!(
@@ -363,35 +390,6 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-fn get_mirrors_hashmap() -> Result<HashMap<String, String>> {
-    let mirrors = read_distro_file(REPO_MIRROR_FILE.to_string())?;
-    let mirrors = mirrors.as_mapping().ok_or_else(|| {
-        anyhow!(
-            "Repository data corrupted, please check your aosc-os-repository-data installation!"
-        )
-    })?;
-    let mut mirrors_map = HashMap::new();
-    for (k, _) in mirrors {
-        if let Some(mirror_name) = k.as_str() {
-            mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
-        }
-    }
-    if let Ok(custom_mirrors) = read_distro_file(CUSTOM_MIRROR_FILE.to_string()) {
-        let custom_mirrors = custom_mirrors.as_mapping().ok_or_else(|| {
-            anyhow!(
-                "Custom repository data corrupted, please check your aosc-os-repository-data installation!"
-            )
-        })?;
-        for (k, _) in custom_mirrors {
-            if let Some(mirror_name) = k.as_str() {
-                mirrors_map.insert(mirror_name.to_string(), get_mirror_url(mirror_name)?);
-            }
-        }
-    }
-
-    Ok(mirrors_map)
-}
-
 fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     let timer = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
@@ -411,49 +409,24 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    if let Some(mirror_url) = read_distro_file(REPO_MIRROR_FILE.to_string())?.get(mirror_name) {
-        return Ok(mirror_url
-            .get("url")
-            .ok_or_else(|| anyhow!("URL is not defined!"))?
-            .as_str()
-            .ok_or_else(|| anyhow!("URL is not a string!"))?
-            .to_owned());
-    } else {
-        return Ok(read_distro_file(CUSTOM_MIRROR_FILE.to_string())?
-            .get(mirror_name)
-            .ok_or_else(|| anyhow!("URL is not defined!"))?
-            .as_str()
-            .ok_or_else(|| anyhow!("URL is not a string!"))?
-            .to_owned());
-    }
+    let mirror_url = read_distro_mirrors_file()?
+        .get(mirror_name)
+        .ok_or_else(|| anyhow!("Cannot find mirror!"))?
+        .get("url")
+        .ok_or_else(|| anyhow!("Cannot get URL!"))?
+        .to_owned();
+
+    Ok(mirror_url)
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
-    let branch_suites = read_distro_file(REPO_BRANCH_FILE.to_string())?
+    let branch_suites = read_distro_branches_file()?
         .get(branch_name)
-        .ok_or_else(|| anyhow!("Branch does not exist!"))?
-        .get("suites")
-        .ok_or_else(|| {
-            anyhow!("\"suites\" does not exist, please check your aosc-os-repository-data installation!")
-        })?
-        .as_sequence()
-        .ok_or_else(|| {
-            anyhow!("\"suites\" is not an array, please check your aosc-os-repository-data installation!")
-        })?
+        .ok_or_else(|| anyhow!("Cannot find branch!"))?
+        .suites
         .to_owned();
 
-    let mut suites = Vec::new();
-    for i in branch_suites {
-        if let Some(i) = i.as_str() {
-            suites.push(i.to_string());
-        } else {
-            return Err(anyhow!(
-                "\"suites\" data corrupted, please check your aosc-os-repository-data installation!"
-            ));
-        }
-    }
-
-    Ok(suites)
+    Ok(branch_suites)
 }
 
 fn get_directory_name() -> Result<&'static str> {
