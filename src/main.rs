@@ -212,16 +212,12 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 }
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
-    if mirror_name.contains(":") {
-        return Err(anyhow!("Your mirror_name contains invalid symbol \":\""));
-    }
     let mut custom_mirror_data = read_custom_mirror()?;
     if Url::parse(mirror_url).is_err() {
         return Err(anyhow!("mirror_url is not a URL!"));
     }
-    let new_mirror = format!("{}: {}", mirror_name, mirror_url);
-    if !custom_mirror_data.contains(&new_mirror) {
-        custom_mirror_data.push(new_mirror);
+    if custom_mirror_data.get(mirror_name).is_none() {
+        custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
     } else {
         return Err(anyhow!("Custom mirror {} already exists!", mirror_name));
     }
@@ -229,43 +225,33 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
         "Adding custom mirror {} to {}",
         mirror_name, CUSTOM_MIRROR_FILE
     );
-    fs::write(CUSTOM_MIRROR_FILE, custom_mirror_data.join("\n"))?;
+    fs::write(
+        CUSTOM_MIRROR_FILE,
+        serde_yaml::to_string(&custom_mirror_data)?,
+    )?;
 
     Ok(())
 }
 
 fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     let mut custom_mirror = read_custom_mirror()?;
-    if !custom_mirror.contains(&format!(
-        "{}: {}",
-        mirror_name,
-        get_mirror_url(mirror_name)?
-    )) {
+    if custom_mirror.get(mirror_name).is_none() {
         return Err(anyhow!("Custom mirror {} does not exist!", mirror_name));
-    }
-    if let Some(index) = custom_mirror
-        .iter()
-        .position(|v| v.starts_with(format!("{}:", mirror_name).as_str()))
-    {
-        custom_mirror.remove(index);
+    } else {
+        custom_mirror.remove(mirror_name);
     }
     println!(
         "Removing custom mirror {} from {}",
         mirror_name, CUSTOM_MIRROR_FILE
     );
-    fs::write(CUSTOM_MIRROR_FILE, custom_mirror.join("\n"))?;
+    fs::write(CUSTOM_MIRROR_FILE, serde_yaml::to_string(&custom_mirror)?)?;
 
     Ok(())
 }
 
-fn read_custom_mirror() -> Result<Vec<String>> {
-    if let Ok(file_data) = fs::read_to_string(CUSTOM_MIRROR_FILE) {
-        return Ok(file_data
-            .split("\n")
-            .into_iter()
-            .map(|x| x.into())
-            .filter(|x| x != &"")
-            .collect());
+fn read_custom_mirror() -> Result<HashMap<String, String>> {
+    if let Ok(file_data) = fs::read(CUSTOM_MIRROR_FILE) {
+        return Ok(serde_yaml::from_slice(&file_data)?);
     }
     fs::create_dir_all("/etc/apt-gen-list")?;
     fs::File::create(CUSTOM_MIRROR_FILE)?;
@@ -336,7 +322,7 @@ fn read_distro_components_file() -> Result<HashMap<String, String>> {
 
 fn read_distro_branches_file() -> Result<HashMap<String, BranchItem>> {
     return Ok(serde_yaml::from_slice(&fs::read(
-        REPO_BRANCH_FILE.to_string()
+        REPO_BRANCH_FILE.to_string(),
     )?)?);
 }
 
