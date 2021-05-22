@@ -1,11 +1,8 @@
 use anyhow::{anyhow, Result};
-use attohttpc;
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
 use serde::{Deserialize, Serialize};
-use serde_json;
-use serde_yaml;
 use sha1::Sha1;
 use std::{
     collections::HashMap,
@@ -18,9 +15,9 @@ mod cli;
 
 lazy_static! {
     static ref REPO_DATA_DIRECTORY: String = get_repo_data_path();
-    static ref REPO_MIRROR_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"mirrors.yml";
-    static ref REPO_COMPONENT_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"comps.yml";
-    static ref REPO_BRANCH_FILE: String = REPO_DATA_DIRECTORY.to_string() + &"branches.yml";
+    static ref REPO_MIRROR_FILE: String = REPO_DATA_DIRECTORY.to_string() + "mirrors.yml";
+    static ref REPO_COMPONENT_FILE: String = REPO_DATA_DIRECTORY.to_string() + "comps.yml";
+    static ref REPO_BRANCH_FILE: String = REPO_DATA_DIRECTORY.to_string() + "branches.yml";
 }
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
@@ -141,7 +138,7 @@ fn get_repo_data_path() -> String {
         }
     }
 
-    return String::from("/usr/local/share/distro-repository-data/");
+    String::from("/usr/local/share/distro-repository-data/")
 }
 
 fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
@@ -175,7 +172,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>, anyhow::Error> {
     }
     bar.finish_and_clear();
     mirrors_score_table.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
-    if mirrors_score_table.len() == 0 {
+    if mirrors_score_table.is_empty() {
         return Err(anyhow!(
             "Get All mirror failed! Please check your network connection!"
         ));
@@ -337,7 +334,7 @@ fn read_status() -> Result<Status> {
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>>(file: String) -> Result<T> {
-    return Ok(serde_yaml::from_slice(&fs::read(file.to_string())?)?);
+    Ok(serde_yaml::from_slice(&fs::read(file)?)?)
 }
 
 fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
@@ -377,10 +374,8 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
     let response = attohttpc::get(download_url)
         .timeout(Duration::from_secs(10))
         .send()?;
-    if response.is_success() {
-        if Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
-            return Ok(timer.elapsed().as_millis());
-        }
+    if response.is_success() && Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+        return Ok(timer.elapsed().as_millis());
     }
 
     Err(anyhow!(
@@ -416,10 +411,10 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
 
 fn get_directory_name() -> Result<&'static str> {
     if let Ok(file_data) = fs::read_to_string("/etc/os-release") {
-        let os_release: Vec<&str> = file_data.split("\n").into_iter().collect();
+        let os_release: Vec<&str> = file_data.split('\n').into_iter().collect();
         for i in os_release {
-            if i.starts_with("NAME=") {
-                return match &i[5..] {
+            if let Some(i) = i.strip_prefix("NAME=") {
+                return match i {
                     "\"AOSC OS\"" => Ok("debs"),
                     "\"AOSC OS/Retro\"" => Ok("debs-retro"),
                     _ => Ok(""),
