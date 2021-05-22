@@ -153,6 +153,11 @@ fn get_mirror_score_table() -> Result<Vec<(String, f32)>, anyhow::Error> {
     }
     bar.finish_and_clear();
     mirrors_score_table.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+    if mirrors_score_table.len() == 0 {
+        return Err(anyhow!(
+            "Get All mirror failed! Please check your network connection!"
+        ));
+    }
     Ok(mirrors_score_table)
 }
 
@@ -197,7 +202,7 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
             status.mirror.push((i.to_string(), mirror_url));
         }
     }
-    println!("Adding mirror {:?} to sources.list ...", entry.join(", "));
+    println!("Adding mirror {} to sources.list ...", entry.join(", "));
     apply_status(&*status, gen_sources_list_string(&status)?)?;
 
     Ok(())
