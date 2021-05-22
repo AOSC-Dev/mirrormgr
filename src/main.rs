@@ -90,7 +90,7 @@ fn main() -> Result<()> {
             let mirrors_score_table = get_mirror_score_table()?;
             println!("Mirror    Speed");
             for (mirror_name, score) in mirrors_score_table {
-                println!("{:<10}{}s", mirror_name, score);
+                println!("{:<10}{}ms", mirror_name, score);
             }
         }
         ("set-fastest-mirror-to-default", _) => {
@@ -139,7 +139,7 @@ fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error
     Ok(())
 }
 
-fn get_mirror_score_table() -> Result<Vec<(String, f32)>, anyhow::Error> {
+fn get_mirror_score_table() -> Result<Vec<(String, u128)>, anyhow::Error> {
     let mut mirrors_score_table = Vec::new();
     let mirrors_hashmap = read_distro_mirrors_file()?;
     let bar = ProgressBar::new_spinner();
@@ -376,7 +376,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
+fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
     let timer = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
@@ -385,7 +385,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
         .send()?
         .is_success()
     {
-        return Ok(timer.elapsed().as_secs_f32());
+        return Ok(timer.elapsed().as_millis());
     }
 
     Err(anyhow!(
