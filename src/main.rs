@@ -212,6 +212,10 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 }
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
+    println!(
+        "Adding custom mirror {} to {}",
+        mirror_name, CUSTOM_MIRROR_FILE
+    );
     let mut custom_mirror_data;
     match read_custom_mirror() {
         Ok(v) => custom_mirror_data = v,
@@ -235,10 +239,6 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     } else {
         warn!("Custom mirror {} already exists!", mirror_name);
     }
-    println!(
-        "Adding custom mirror {} to {}",
-        mirror_name, CUSTOM_MIRROR_FILE
-    );
     fs::write(
         CUSTOM_MIRROR_FILE,
         serde_yaml::to_string(&custom_mirror_data)?,
