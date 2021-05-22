@@ -90,7 +90,7 @@ fn main() -> Result<()> {
                 println!("{:<10}{}s", mirror_name, score);
             }
         }
-        ("set-fastest-mirror-as-default", _) => {
+        ("set-fastest-mirror-to-default", _) => {
             set_fastest_mirror_to_default(status)?;
         }
         ("add-custom-mirror", Some(args)) => {
@@ -123,7 +123,6 @@ fn get_repo_data_path() -> String {
 }
 
 fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
-    println!("Gathering speedtest results, please wait...");
     let mirrors_score_table = get_mirror_score_table()?;
     println!(
         "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
@@ -214,7 +213,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     }
     let new_mirror = format!("{}: {}", mirror_name, mirror_url);
     if !custom_mirror_data.contains(&new_mirror) {
-        custom_mirror_data.push(new_mirror)
+        custom_mirror_data.push(new_mirror);
     } else {
         return Err(anyhow!("Custom mirror {} already exists!", mirror_name));
     }
