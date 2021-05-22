@@ -6,6 +6,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_yaml;
+use sha1::Sha1;
 use std::{
     collections::HashMap,
     fs,
@@ -25,6 +26,7 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
+const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -224,7 +226,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
         Ok(v) => custom_mirror_data = v,
         Err(_) => {
             fs::create_dir_all("/etc/apt-gen-list")?;
-            fs::File::create(CUSTOM_MIRROR_FILE)?;        
+            fs::File::create(CUSTOM_MIRROR_FILE)?;
             custom_mirror_data = HashMap::new();
             custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
             fs::write(
@@ -380,12 +382,13 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
     let timer = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    if attohttpc::get(download_url)
+    let response = attohttpc::get(download_url)
         .timeout(Duration::from_secs(10))
-        .send()?
-        .is_success()
-    {
-        return Ok(timer.elapsed().as_millis());
+        .send()?;
+    if response.is_success() {
+        if Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+            return Ok(timer.elapsed().as_millis());
+        }
     }
 
     Err(anyhow!(
