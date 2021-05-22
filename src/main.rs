@@ -264,8 +264,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
 }
 
 fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
-    let mut custom_mirror =
-        read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?;
+    let mut custom_mirror = read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?;
     if custom_mirror.get(mirror_name).is_none() {
         return Err(anyhow!("Custom mirror {} does not exist!", mirror_name));
     } else {
@@ -374,7 +373,9 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
     let response = attohttpc::get(download_url)
         .timeout(Duration::from_secs(10))
         .send()?;
-    if response.is_success() && Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+    if response.is_success()
+        && Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM
+    {
         return Ok(timer.elapsed().as_millis());
     }
 
@@ -390,8 +391,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
     {
         return Ok(mirror_info.url.to_owned());
     } else if let Some(mirror_url) =
-        read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?
-            .get(mirror_name)
+        read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?.get(mirror_name)
     {
         return Ok(mirror_url.to_owned());
     }
