@@ -461,7 +461,7 @@ fn get_directory_name() -> Result<&'static str> {
         let os_release: Vec<&str> = file_data.split("\n").into_iter().collect();
         for i in os_release {
             if i.starts_with("NAME=") {
-                return match i.replace("NAME=", "").as_str() {
+                return match &i[5..] {
                     "\"AOSC OS\"" => Ok("debs"),
                     "\"AOSC OS/Retro\"" => Ok("debs-retro"),
                     _ => Ok(""),
