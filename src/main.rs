@@ -78,10 +78,7 @@ fn main() -> Result<()> {
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("INPUT").unwrap();
-            if read_distro_branches_file()?
-                .get(new_branch)
-                .is_some()
-            {
+            if read_distro_branches_file()?.get(new_branch).is_some() {
                 status.branch = new_branch.to_string();
             } else {
                 return Err(anyhow!("Branch undefined or does not exist!"));
@@ -338,26 +335,15 @@ fn read_distro_components_file() -> Result<HashMap<String, String>> {
 }
 
 fn read_distro_branches_file() -> Result<HashMap<String, BranchItem>> {
-    if let Ok(file_data) = fs::read(REPO_BRANCH_FILE.to_string()) {
-        let file_data: HashMap<String, BranchItem> = serde_yaml::from_slice(&file_data)?;
-        return Ok(file_data);
-    }
-
-    Err(anyhow!(
-        "Could not find repository data, please check your aosc-os-repository-data installation."
-    ))
+    return Ok(serde_yaml::from_slice(&fs::read(
+        REPO_BRANCH_FILE.to_string()
+    )?)?);
 }
 
 fn read_distro_mirrors_file() -> Result<HashMap<String, HashMap<String, String>>> {
-    if let Ok(file_data) = fs::read(REPO_MIRROR_FILE.to_string()) {
-        let file_data: HashMap<String, HashMap<String, String>> =
-            serde_yaml::from_slice(&file_data)?;
-        return Ok(file_data);
-    }
-
-    Err(anyhow!(
-        "Could not find repository data, please check your aosc-os-repository-data installation."
-    ))
+    return Ok(serde_yaml::from_slice(&fs::read(
+        REPO_MIRROR_FILE.to_string(),
+    )?)?);
 }
 
 fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
