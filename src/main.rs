@@ -47,6 +47,11 @@ struct MirrorInfo {
     url: String,
 }
 
+type BranchesData = HashMap<String, BranchInfo>;
+type MirrorsData = HashMap<String, MirrorInfo>;
+type ComponentData = HashMap<String, String>;
+type CustomMirrorData = HashMap<String, String>;
+
 impl Default for Status {
     fn default() -> Self {
         Status {
@@ -86,7 +91,10 @@ fn main() -> Result<()> {
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("INPUT").unwrap();
-            if read_distro_branches_file()?.get(new_branch).is_some() {
+            if read_distro_file::<BranchesData>(REPO_BRANCH_FILE.to_string())?
+                .get(new_branch)
+                .is_some()
+            {
                 status.branch = new_branch.to_string();
             } else {
                 return Err(anyhow!("Branch undefined or does not exist!"));
@@ -149,7 +157,7 @@ fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error
 
 fn get_mirror_score_table() -> Result<Vec<(String, u128)>, anyhow::Error> {
     let mut mirrors_score_table = Vec::new();
-    let mirrors_hashmap = read_distro_mirrors_file()?;
+    let mirrors_hashmap = read_distro_file::<MirrorsData>(REPO_MIRROR_FILE.to_string())?;
     let bar = ProgressBar::new_spinner();
     bar.enable_steady_tick(50);
     for (index, mirror_name) in mirrors_hashmap.keys().enumerate() {
@@ -228,7 +236,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
         mirror_name, CUSTOM_MIRROR_FILE
     );
     let mut custom_mirror_data;
-    match read_custom_mirror() {
+    match read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string()) {
         Ok(v) => custom_mirror_data = v,
         Err(_) => {
             fs::create_dir_all("/etc/apt-gen-list")?;
@@ -259,7 +267,8 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
 }
 
 fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
-    let mut custom_mirror = read_custom_mirror()?;
+    let mut custom_mirror =
+        read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?;
     if custom_mirror.get(mirror_name).is_none() {
         return Err(anyhow!("Custom mirror {} does not exist!", mirror_name));
     } else {
@@ -272,14 +281,6 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     fs::write(CUSTOM_MIRROR_FILE, serde_yaml::to_string(&custom_mirror)?)?;
 
     Ok(())
-}
-
-fn read_custom_mirror() -> Result<HashMap<String, String>> {
-    if let Ok(file_data) = fs::read(CUSTOM_MIRROR_FILE) {
-        return Ok(serde_yaml::from_slice(&file_data)?);
-    }
-
-    Err(anyhow!("Cannot read custom mirror file!"))
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
@@ -306,7 +307,10 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     for i in &entry {
         if status.component.contains(&i.to_string()) {
             warn!("Component {} is already enabled.", &i);
-        } else if read_distro_components_file()?.get(&i.to_string()).is_some() {
+        } else if read_distro_file::<ComponentData>(REPO_COMPONENT_FILE.to_string())?
+            .get(&i.to_string())
+            .is_some()
+        {
             status.component.push(i.to_string());
         } else {
             return Err(anyhow!("Component {} does not exist.", &i));
@@ -332,22 +336,8 @@ fn read_status() -> Result<Status> {
     Ok(status)
 }
 
-fn read_distro_components_file() -> Result<HashMap<String, String>> {
-    return Ok(serde_yaml::from_slice(&fs::read(
-        REPO_COMPONENT_FILE.to_string(),
-    )?)?);
-}
-
-fn read_distro_branches_file() -> Result<HashMap<String, BranchInfo>> {
-    return Ok(serde_yaml::from_slice(&fs::read(
-        REPO_BRANCH_FILE.to_string(),
-    )?)?);
-}
-
-fn read_distro_mirrors_file() -> Result<HashMap<String, MirrorInfo>> {
-    return Ok(serde_yaml::from_slice(&fs::read(
-        REPO_MIRROR_FILE.to_string(),
-    )?)?);
+fn read_distro_file<T: for<'de> Deserialize<'de>>(file: String) -> Result<T> {
+    return Ok(serde_yaml::from_slice(&fs::read(file.to_string())?)?);
 }
 
 fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
@@ -400,9 +390,14 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    if let Some(mirror_info) = read_distro_mirrors_file()?.get(mirror_name) {
+    if let Some(mirror_info) =
+        read_distro_file::<MirrorsData>(REPO_MIRROR_FILE.to_string())?.get(mirror_name)
+    {
         return Ok(mirror_info.url.to_owned());
-    } else if let Some(mirror_url) = read_custom_mirror()?.get(mirror_name) {
+    } else if let Some(mirror_url) =
+        read_distro_file::<CustomMirrorData>(CUSTOM_MIRROR_FILE.to_string())?
+            .get(mirror_name)
+    {
         return Ok(mirror_url.to_owned());
     }
 
@@ -410,7 +405,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
-    let branch_suites = read_distro_branches_file()?
+    let branch_suites = read_distro_file::<BranchesData>(REPO_BRANCH_FILE.to_string())?
         .get(branch_name)
         .ok_or_else(|| anyhow!("Cannot find branch!"))?
         .suites
