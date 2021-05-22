@@ -106,6 +106,9 @@ fn main() -> Result<()> {
                 remove_custom_mirror(entry)?;
             }
         }
+        ("set-mirror-to-default", _) => {
+            set_mirror("origin", &mut status)?;
+        }
         _ => {
             unreachable!()
         }
