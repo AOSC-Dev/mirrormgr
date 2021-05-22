@@ -212,12 +212,19 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow
 }
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
-    let mut custom_mirror_data = match read_custom_mirror() {
-        Ok(v) => v,
+    let mut custom_mirror_data;
+    match read_custom_mirror() {
+        Ok(v) => custom_mirror_data = v,
         Err(_) => {
-            let mut result = HashMap::new();
-            result.insert(mirror_name.to_string(), mirror_url.to_string());
-            result
+            fs::create_dir_all("/etc/apt-gen-list")?;
+            fs::File::create(CUSTOM_MIRROR_FILE)?;        
+            custom_mirror_data = HashMap::new();
+            custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
+            fs::write(
+                CUSTOM_MIRROR_FILE,
+                serde_yaml::to_string(&custom_mirror_data)?,
+            )?;
+            return Ok(());
         }
     };
     if Url::parse(mirror_url).is_err() {
@@ -258,15 +265,9 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
 
 fn read_custom_mirror() -> Result<HashMap<String, String>> {
     if let Ok(file_data) = fs::read(CUSTOM_MIRROR_FILE) {
-        if fs::metadata(CUSTOM_MIRROR_FILE)?.len() == 0 {
-            fs::write(CUSTOM_MIRROR_FILE, "---\n")?;
-        }
         return Ok(serde_yaml::from_slice(&file_data)?);
     }
-    fs::create_dir_all("/etc/apt-gen-list")?;
-    fs::File::create(CUSTOM_MIRROR_FILE)?;
-
-    Ok(read_custom_mirror()?)
+    Err(anyhow!("Cannot read custom mirror file!"))
 }
 
 fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
@@ -361,7 +362,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
         let debs_url = Url::parse(&mirror_url)?.join(directory_name)?;
         for branch in get_branch_suites(&status.branch)? {
             result += &format!(
-                "deb {} {} {} \n",
+                "deb {} {} {}\n",
                 debs_url.as_str(),
                 branch,
                 status.component.join(" ")
