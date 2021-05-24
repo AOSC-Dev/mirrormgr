@@ -106,8 +106,8 @@ fn main() -> Result<()> {
                 println!("{:<10}{}ms", mirror_name, score);
             }
         }
-        ("set-fastest-mirror-to-default", _) => {
-            set_fastest_mirror_to_default(status)?;
+        ("set-fastest-mirror-as-default", _) => {
+            set_fastest_mirror_as_default(status)?;
         }
         ("add-custom-mirror", Some(args)) => {
             let custom_mirror_args: Vec<&str> = args.values_of("INPUT").unwrap().collect();
@@ -119,7 +119,7 @@ fn main() -> Result<()> {
                 remove_custom_mirror(entry)?;
             }
         }
-        ("set-mirror-to-default", _) => {
+        ("set-mirror-as-default", _) => {
             set_mirror("origin", &mut status)?;
         }
         _ => {
@@ -141,7 +141,7 @@ fn get_repo_data_path() -> String {
     String::from("/usr/local/share/distro-repository-data/")
 }
 
-fn set_fastest_mirror_to_default(mut status: Status) -> Result<(), anyhow::Error> {
+fn set_fastest_mirror_as_default(mut status: Status) -> Result<(), anyhow::Error> {
     let mirrors_score_table = get_mirror_score_table()?;
     println!(
         "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
@@ -402,7 +402,7 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
     let branch_suites = read_distro_file::<BranchesData>(REPO_BRANCH_FILE.to_string())?
         .get(branch_name)
-        .ok_or_else(|| anyhow!("Cannot find branch!"))?
+        .ok_or_else(|| anyhow!("Cannot read from a list of branches!"))?
         .suites
         .to_owned();
 
@@ -423,5 +423,5 @@ fn get_directory_name() -> Result<&'static str> {
         }
     }
 
-    Err(anyhow!("Could not find /etc/os-release! or brokend!"))
+    Err(anyhow!("Cannot find /etc/os-release, or file is corrupted."))
 }
