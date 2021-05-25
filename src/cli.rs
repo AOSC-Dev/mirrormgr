@@ -15,7 +15,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Input branch name here")
-                        .max_values(1),
+                        .max_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -24,7 +26,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
-                        .max_values(1),
+                        .max_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -33,7 +37,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
-                        .min_values(1),
+                        .min_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -42,7 +48,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("source.list mirror")
-                        .min_values(1),
+                        .min_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -59,7 +67,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Input component name")
-                        .min_values(1),
+                        .min_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -68,7 +78,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Input component name to be removed")
-                        .min_values(1),
+                        .min_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -78,7 +90,9 @@ pub fn build_cli() -> App<'static, 'static> {
                     Arg::with_name("INPUT")
                         .help("Input custom repository mirror name and mirror url to add a custom mirror")
                         .min_values(2)
-                        .max_values(2),
+                        .max_values(2)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -87,7 +101,9 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("INPUT")
                         .help("Input custom repository mirror name to remove from the list of custom mirrors")
-                        .min_values(1),
+                        .min_values(1)
+                        .required(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
