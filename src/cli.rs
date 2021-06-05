@@ -13,7 +13,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("set-branch")
                 .about("Set APT repository branch (e.g., stable)")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("BRANCH_NAME")
                         .help("Input branch name here")
                         .max_values(1)
                         .required(true)
@@ -24,7 +24,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("set-mirror")
                 .about("Set APT repository mirror")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("MIRROR")
                         .help("source.list mirror")
                         .max_values(1)
                         .required(true)
@@ -35,7 +35,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("add-mirror")
                 .about("Add additional APT repository mirror")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("MIRROR")
                         .help("source.list mirror")
                         .min_values(1)
                         .required(true)
@@ -46,8 +46,8 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("remove-mirror")
                 .about("Remove APT repository mirror")
                 .arg(
-                    Arg::with_name("INPUT")
-                        .help("source.list mirror")
+                    Arg::with_name("MIRROR")
+                        .help("remove source.list mirror")
                         .min_values(1)
                         .required(true)
                         .takes_value(true),
@@ -65,7 +65,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("add-component")
                 .about("Set APT repository component")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("COMPONENT")
                         .help("Input component name")
                         .min_values(1)
                         .required(true)
@@ -76,7 +76,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("remove-component")
                 .about("Remove APT repository component")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("COMPONENT")
                         .help("Input component name to be removed")
                         .min_values(1)
                         .required(true)
@@ -87,19 +87,23 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("add-custom-mirror")
                 .about("Add custom repository mirror")
                 .arg(
-                    Arg::with_name("INPUT")
-                        .help("Input custom repository mirror name and mirror url to add a custom mirror")
-                        .min_values(2)
-                        .max_values(2)
+                    Arg::with_name("MIRROR_NAME")
+                        .help("custom repository mirror name")
                         .required(true)
                         .takes_value(true),
-                ),
+                )
+                .arg(
+                    Arg::with_name("MIRROR_URL")
+                    .help("custom repository mirror url")
+                    .required(true)
+                    .takes_value(true),
+                )
         )
         .subcommand(
             SubCommand::with_name("remove-custom-mirror")
                 .about("Remove custom repository mirror")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::with_name("MIRROR")
                         .help("Input custom repository mirror name to remove from the list of custom mirrors")
                         .min_values(1)
                         .required(true)
