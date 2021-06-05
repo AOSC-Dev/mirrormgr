@@ -141,7 +141,7 @@ fn get_repo_data_path() -> PathBuf {
     Path::new("/usr/local/share/distro-repository-data/").to_owned()
 }
 
-fn set_fastest_mirror_as_default(mut status: Status) -> Result<(), anyhow::Error> {
+fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     let mirrors_score_table = get_mirror_score_table()?;
     println!(
         "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
@@ -152,7 +152,7 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<(), anyhow::Error
     Ok(())
 }
 
-fn get_mirror_score_table() -> Result<Vec<(String, u128)>, anyhow::Error> {
+fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
     let mut mirrors_score_table = Vec::new();
     let mirrors_hashmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
     let bar = ProgressBar::new_spinner();
@@ -180,7 +180,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>, anyhow::Error> {
     Ok(mirrors_score_table)
 }
 
-fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error> {
+fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<()> {
     status.mirror = vec![(new_mirror.to_string(), get_mirror_url(new_mirror)?)];
     println!("Setting {} as mirror!", new_mirror);
     apply_status(&*status, gen_sources_list_string(&*status)?)?;
@@ -188,7 +188,7 @@ fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<(), anyhow::Error
     Ok(())
 }
 
-fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     if status.mirror.len() == 1 {
         return Err(anyhow!(
             "You only have one mirror left, refusing to remove!"
@@ -208,7 +208,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), any
     Ok(())
 }
 
-fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
     println!("Adding mirror {} to sources.list ...", entry.join(", "));
     for i in &entry {
@@ -279,7 +279,7 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), anyhow::Error> {
+fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<()> {
     let entry: Vec<&str> = args.values_of("COMPONENT").unwrap().collect();
     if !entry.contains(&"main") {
         for i in &entry {
@@ -298,7 +298,7 @@ fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<(), a
     Ok(())
 }
 
-fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<(), anyhow::Error> {
+fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     let entry: Vec<&str> = args.values_of("COMPONENT").unwrap().collect();
     for i in &entry {
         if status.component.contains(&i.to_string()) {
