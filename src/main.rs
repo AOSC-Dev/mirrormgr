@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
+use os_release::OsRelease;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
 use std::{
@@ -11,7 +12,6 @@ use std::{
     time::{Duration, Instant},
 };
 use url::Url;
-use os_release::OsRelease;
 
 mod cli;
 
@@ -178,6 +178,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
             "Get All mirror failed! Please check your network connection!"
         ));
     }
+    
     Ok(mirrors_score_table)
 }
 
@@ -412,10 +413,10 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
 
 fn get_directory_name() -> Result<&'static str> {
     let release = OsRelease::new()?;
-    
+
     match release.name.as_str() {
         "AOSC OS" => Ok("debs"),
         "AOSC OS/Retro" => Ok("debs-retro"),
-        _ => Ok("")
+        _ => Ok(""),
     }
 }
