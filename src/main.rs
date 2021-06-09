@@ -11,6 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 use url::Url;
+use os_release::OsRelease;
 
 mod cli;
 
@@ -410,20 +411,11 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
 }
 
 fn get_directory_name() -> Result<&'static str> {
-    if let Ok(file_data) = fs::read_to_string("/etc/os-release") {
-        let os_release: Vec<&str> = file_data.split('\n').into_iter().collect();
-        for i in os_release {
-            if let Some(i) = i.strip_prefix("NAME=") {
-                return match i {
-                    "\"AOSC OS\"" => Ok("debs"),
-                    "\"AOSC OS/Retro\"" => Ok("debs-retro"),
-                    _ => Ok(""),
-                };
-            }
-        }
+    let release = OsRelease::new()?;
+    
+    match release.name.as_str() {
+        "AOSC OS" => Ok("debs"),
+        "AOSC OS/Retro" => Ok("debs-retro"),
+        _ => Ok("")
     }
-
-    Err(anyhow!(
-        "Cannot find /etc/os-release, or file is corrupted."
-    ))
 }

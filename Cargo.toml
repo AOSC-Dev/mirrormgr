@@ -18,6 +18,7 @@ lazy_static = "1.4"
 log = "0.4"
 indicatif = "0.16"
 sha1 = "0.6"
+os-release = "0.1"
 
 [build-dependencies]
 clap ="2.33"
