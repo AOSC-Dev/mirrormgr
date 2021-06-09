@@ -67,11 +67,14 @@ fn main() -> Result<()> {
 
     match app.subcommand() {
         ("status", _) => {
-            let mirror_name_list: Vec<String> =
-                status.mirror.into_iter().map(|x| x.0).collect();
+            let mirror_list = status
+                .mirror
+                .into_iter()
+                .map(|x| format!("{} ({})", x.0, x.1))
+                .collect::<Vec<String>>();
             println!("Branch: {}", status.branch);
             println!("Component: {}", status.component.join(", "));
-            println!("Mirror: {}", mirror_name_list.join(", "));
+            println!("Mirror: {}", mirror_list.join(", "));
         }
         ("set-mirror", Some(args)) => {
             set_mirror(args.value_of("MIRROR").unwrap(), &mut status)?;
