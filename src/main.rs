@@ -324,17 +324,14 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 }
 
 fn read_status() -> Result<Status> {
-    let status = match fs::read(STATUS_FILE) {
-        Ok(v) => v,
-        Err(_) => {
-            fs::create_dir_all("/var/lib/apt/gen")?;
-            fs::File::create(STATUS_FILE)?;
-            fs::read(STATUS_FILE)?
-        }
-    };
-    let status: Status = serde_json::from_slice(&status).unwrap_or_default();
+    if let Ok(status) = fs::read(STATUS_FILE) {
+        return Ok(serde_json::from_slice(&status).unwrap_or_default());
+    }
+    fs::create_dir_all("/var/lib/apt/gen")?;
+    fs::File::create(STATUS_FILE)?;
+    fs::read(STATUS_FILE)?;
 
-    Ok(status)
+    Ok(read_status()?)
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
