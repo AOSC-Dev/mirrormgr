@@ -233,6 +233,9 @@ fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 }
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
+    if Url::parse(mirror_url).is_err() {
+        return Err(anyhow!("mirror_url is not a URL!"));
+    }
     println!(
         "Adding custom mirror {} to {}",
         mirror_name, CUSTOM_MIRROR_FILE
@@ -252,9 +255,6 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
             return Ok(());
         }
     };
-    if Url::parse(mirror_url).is_err() {
-        return Err(anyhow!("mirror_url is not a URL!"));
-    }
     if custom_mirror_data.get(mirror_name).is_none() {
         custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
     } else {
