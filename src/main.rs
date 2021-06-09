@@ -106,7 +106,7 @@ fn main() -> Result<()> {
         }
         ("mirrors-speedtest", _) => {
             let mirrors_score_table = get_mirror_score_table()?;
-            println!("Mirror    Speed");
+            println!("{:<10}{}", "Mrror", "Speed");
             for (mirror_name, score) in mirrors_score_table {
                 println!("{:<10}{}ms", mirror_name, score);
             }
