@@ -68,7 +68,7 @@ fn main() -> Result<()> {
     match app.subcommand() {
         ("status", _) => {
             let mirror_name_list: Vec<String> =
-                status.mirror.into_iter().map(|x| x.0).rev().collect();
+                status.mirror.into_iter().map(|x| x.0).collect();
             println!("Branch: {}", status.branch);
             println!("Component: {}", status.component.join(", "));
             println!("Mirror: {}", mirror_name_list.join(", "));
@@ -178,7 +178,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
             "Get All mirror failed! Please check your network connection!"
         ));
     }
-    
+
     Ok(mirrors_score_table)
 }
 
