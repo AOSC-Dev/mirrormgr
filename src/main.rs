@@ -64,9 +64,6 @@ impl Default for Status {
 
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
-    if !Path::new(STATUS_FILE).is_file() && whoami::username() != "root" {
-        return Err(anyhow!("Status file ({}) not exist! please use root user to run apt-gen-list to create status file!", STATUS_FILE));
-    }
     let mut status = read_status()?;
 
     match app.subcommand() {
@@ -325,6 +322,11 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 }
 
 fn read_status() -> Result<Status> {
+    if !Path::new(STATUS_FILE).is_file() && whoami::username() != "root" {
+        return Err(anyhow!(
+            "Status file ({}) does not exist! please use root user to run apt-gen-list to create status file!", 
+            STATUS_FILE));
+    }
     if let Ok(status) = fs::read(STATUS_FILE) {
         return Ok(serde_json::from_slice(&status).unwrap_or_default());
     }
