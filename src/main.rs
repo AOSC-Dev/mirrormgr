@@ -64,6 +64,9 @@ impl Default for Status {
 
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
+    if !Path::new(STATUS_FILE).is_file() && whoami::username() != "root" {
+        return Err(anyhow!("Status file ({}) not exist! please use root user to run apt-gen-list to create status file!", STATUS_FILE));
+    }
     let mut status = read_status()?;
 
     match app.subcommand() {
@@ -326,7 +329,7 @@ fn read_status() -> Result<Status> {
         return Ok(serde_json::from_slice(&status).unwrap_or_default());
     }
     fs::create_dir_all("/var/lib/apt/gen")?;
-    fs::File::create(STATUS_FILE)?;
+    fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
     Ok(Status::default())
 }
