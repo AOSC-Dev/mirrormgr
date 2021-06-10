@@ -107,7 +107,7 @@ fn main() -> Result<()> {
         }
         ("mirrors-speedtest", _) => {
             let mirrors_score_table = get_mirror_score_table()?;
-            println!("{:<10}{}", "Mrror", "Speed");
+            println!("{:<10}Speed", "Mrror");
             for (mirror_name, score) in mirrors_score_table {
                 println!("{:<10}{}ms", mirror_name, score);
             }
@@ -329,7 +329,7 @@ fn read_status() -> Result<Status> {
     fs::File::create(STATUS_FILE)?;
     fs::read(STATUS_FILE)?;
 
-    Ok(read_status()?)
+    read_status()
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
