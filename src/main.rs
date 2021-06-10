@@ -57,7 +57,7 @@ impl Default for Status {
         Status {
             branch: "stable".to_string(),
             component: vec!["main".to_string()],
-            mirror: indexmap! {"origin".to_string() => "https://repo.aosc.io".to_string() },
+            mirror: indexmap! {"origin".to_string() => "https://repo.aosc.io".to_string()},
         }
     }
 }
@@ -71,7 +71,7 @@ fn main() -> Result<()> {
             let mirror_list = status
                 .mirror
                 .into_iter()
-                .map(|x| format!("{} ({})", x.0, x.1))
+                .map(|(mirror_name, mirror_url)| format!("{} ({})", mirror_name, mirror_url))
                 .collect::<Vec<String>>();
             println!("Branch: {}", status.branch);
             println!("Component: {}", status.component.join(", "));
@@ -327,9 +327,8 @@ fn read_status() -> Result<Status> {
     }
     fs::create_dir_all("/var/lib/apt/gen")?;
     fs::File::create(STATUS_FILE)?;
-    fs::read(STATUS_FILE)?;
 
-    read_status()
+    Ok(Status::default())
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
