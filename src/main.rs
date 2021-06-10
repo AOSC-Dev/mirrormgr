@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use indexmap::{indexmap, IndexMap};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
@@ -31,7 +32,7 @@ const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989"
 struct Status {
     branch: String,
     component: Vec<String>,
-    mirror: Vec<(String, String)>,
+    mirror: IndexMap<String, String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -56,7 +57,7 @@ impl Default for Status {
         Status {
             branch: "stable".to_string(),
             component: vec!["main".to_string()],
-            mirror: vec![("origin".to_string(), "https://repo.aosc.io".to_string())],
+            mirror: indexmap! {"origin".to_string() => "https://repo.aosc.io".to_string() },
         }
     }
 }
@@ -186,7 +187,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
 }
 
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<()> {
-    status.mirror = vec![(new_mirror.to_string(), get_mirror_url(new_mirror)?)];
+    status.mirror = indexmap! {new_mirror.to_string() => get_mirror_url(new_mirror)?};
     println!("Setting {} as mirror!", new_mirror);
     apply_status(&*status, gen_sources_list_string(&*status)?)?;
 
@@ -201,8 +202,8 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     }
     let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
     for i in &entry {
-        if let Some(index) = status.mirror.iter().position(|v| &v.0 == i) {
-            status.mirror.remove(index);
+        if status.mirror.get(i.to_owned()).is_some() {
+            status.mirror.remove(i.to_owned());
         } else {
             warn!("Cannot find mirror: {}.", i);
         }
@@ -216,15 +217,12 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
     println!("Adding mirror {} to sources.list ...", entry.join(", "));
-    for i in &entry {
+    for i in entry {
         let mirror_url = get_mirror_url(i)?;
-        if status
-            .mirror
-            .contains(&(i.to_string(), mirror_url.to_owned()))
-        {
+        if status.mirror.get(i).is_some() {
             warn!("Mirror {} already enabled!", i);
         } else {
-            status.mirror.push((i.to_string(), mirror_url));
+            status.mirror.insert(i.to_string(), mirror_url);
         }
     }
     apply_status(&*status, gen_sources_list_string(&status)?)?;
