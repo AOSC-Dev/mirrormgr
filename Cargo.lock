@@ -23,7 +23,7 @@ checksum = "28b2cd92db5cbd74e8e5028f7e27dd7aa3090e89e4f2a197cc7c8dfb69c7063b"
 
 [[package]]
 name = "apt-gen-list"
-version = "0.4.0"
+version = "0.4.1-alpha.0"
 dependencies = [
  "anyhow",
  "attohttpc",
