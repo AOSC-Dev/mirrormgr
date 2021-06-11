@@ -126,7 +126,7 @@ fn main() -> Result<()> {
                 remove_custom_mirror(entry)?;
             }
         }
-        ("set-mirror-as-default", _) => {
+        ("reset-mirror", _) => {
             set_mirror("origin", &mut status)?;
         }
         _ => {
