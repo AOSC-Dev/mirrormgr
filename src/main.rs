@@ -110,6 +110,7 @@ fn main() -> Result<()> {
         ("speedtest", _) => {
             let mirrors_score_table = get_mirror_score_table()?;
             println!(" {:<20}Speed", "Mirror");
+            println!(" {:<20}---", "---");
             for (mirror_name, score) in mirrors_score_table {
                 println!(" {:<20}{}", mirror_name, score);
             }
@@ -431,10 +432,12 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     let response = attohttpc::get(download_url)
         .timeout(Duration::from_secs(10))
         .send()?;
-    if response.is_success()
-        && Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM
-    {
-        return Ok(timer.elapsed().as_secs_f32());
+    if response.is_success() {
+        let file = response.bytes()?;
+        let result_time = timer.elapsed().as_secs_f32();
+        if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+            return Ok(result_time);
+        }
     }
 
     Err(anyhow!(
