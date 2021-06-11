@@ -64,14 +64,6 @@ _arguments "${_arguments_options[@]}" \
 ':MIRROR -- remove source.list mirror:_files' \
 && ret=0
 ;;
-(set-mirror-as-default)
-_arguments "${_arguments_options[@]}" \
-'-h[Prints help information]' \
-'--help[Prints help information]' \
-'-V[Prints version information]' \
-'--version[Prints version information]' \
-&& ret=0
-;;
 (status)
 _arguments "${_arguments_options[@]}" \
 '-h[Prints help information]' \
@@ -161,7 +153,6 @@ _apt-gen-list_commands() {
 "set-mirror:Set APT repository mirror" \
 "add-mirror:Add additional APT repository mirror" \
 "remove-mirror:Remove APT repository mirror" \
-"set-mirror-as-default:Set default APT repository mirror" \
 "status:Show apt-gen-list status" \
 "add-component:Set APT repository component" \
 "remove-component:Remove APT repository component" \
@@ -250,13 +241,6 @@ _apt-gen-list__set-mirror_commands() {
         
     )
     _describe -t commands 'apt-gen-list set-mirror commands' commands "$@"
-}
-(( $+functions[_apt-gen-list__set-mirror-as-default_commands] )) ||
-_apt-gen-list__set-mirror-as-default_commands() {
-    local commands; commands=(
-        
-    )
-    _describe -t commands 'apt-gen-list set-mirror-as-default commands' commands "$@"
 }
 (( $+functions[_apt-gen-list__speedtest_commands] )) ||
 _apt-gen-list__speedtest_commands() {

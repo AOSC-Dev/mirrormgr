@@ -54,10 +54,6 @@ pub fn build_cli() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("set-mirror-as-default")
-                .about("Set default APT repository mirror")
-        )
-        .subcommand(
             SubCommand::with_name("status")
                 .about("Show apt-gen-list status")
         )

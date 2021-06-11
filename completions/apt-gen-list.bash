@@ -46,9 +46,6 @@ _apt-gen-list() {
             set-mirror)
                 cmd+="__set__mirror"
                 ;;
-            set-mirror-as-default)
-                cmd+="__set__mirror__as__default"
-                ;;
             speedtest)
                 cmd+="__speedtest"
                 ;;
@@ -62,7 +59,7 @@ _apt-gen-list() {
 
     case "${cmd}" in
         apt-gen-list)
-            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror set-mirror-as-default status add-component remove-component add-custom-mirror remove-custom-mirror speedtest reset-mirror list-mirrors help"
+            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror status add-component remove-component add-custom-mirror remove-custom-mirror speedtest reset-mirror list-mirrors help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -229,21 +226,6 @@ _apt-gen-list() {
             ;;
         apt__gen__list__set__mirror)
             opts=" -h -V  --help --version  <MIRROR>... "
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        apt__gen__list__set__mirror__as__default)
-            opts=" -h -V  --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
