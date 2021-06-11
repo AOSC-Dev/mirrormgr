@@ -111,7 +111,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("mirrors-speedtest")
+            SubCommand::with_name("speedtest")
                 .about("Run speed-test on available mirrors")
         )
         .subcommand(

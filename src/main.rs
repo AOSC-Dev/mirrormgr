@@ -105,7 +105,7 @@ fn main() -> Result<()> {
             println!("Setting {} as branch", new_branch);
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
-        ("mirrors-speedtest", _) => {
+        ("speedtest", _) => {
             let mirrors_score_table = get_mirror_score_table()?;
             println!("{:<10}Speed", "Mrror");
             for (mirror_name, score) in mirrors_score_table {
