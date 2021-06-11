@@ -118,4 +118,8 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("reset-mirror")
                 .about("Set fastest mirror as default")
         )
+        .subcommand(
+            SubCommand::with_name("available-mirror")
+                .about("Show available mirror list")
+        )
 }

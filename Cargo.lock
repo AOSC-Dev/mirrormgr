@@ -33,6 +33,7 @@ dependencies = [
  "lazy_static",
  "log",
  "os-release",
+ "owo-colors",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -411,6 +412,12 @@ checksum = "82f29ae2f71b53ec19cc23385f8e4f3d90975195aa3d09171ba3bef7159bec27"
 dependencies = [
  "lazy_static",
 ]
+
+[[package]]
+name = "owo-colors"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2fe43bf372b08cc9ccee5144715db59c79ab00168bbe4cf0d274dc0d5f64d7f"
 
 [[package]]
 name = "percent-encoding"

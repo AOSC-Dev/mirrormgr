@@ -4,6 +4,7 @@ use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
 use os_release::OsRelease;
+use owo_colors::OwoColorize;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
 use std::{
@@ -48,7 +49,7 @@ struct MirrorInfo {
 }
 
 type BranchesData = HashMap<String, BranchInfo>;
-type MirrorsData = HashMap<String, MirrorInfo>;
+type MirrorsData = IndexMap<String, MirrorInfo>;
 type ComponentData = HashMap<String, String>;
 type CustomMirrorData = HashMap<String, String>;
 
@@ -129,6 +130,9 @@ fn main() -> Result<()> {
         ("reset-mirror", _) => {
             set_mirror("origin", &mut status)?;
         }
+        ("available-mirror", _) => {
+            get_available_mirror(&status)?;
+        }
         _ => {
             unreachable!()
         }
@@ -184,6 +188,38 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
     }
 
     Ok(mirrors_score_table)
+}
+
+fn get_available_mirror(status: &Status) -> Result<()> {
+    let now_using_mirror: Vec<String> =
+        status.mirror.keys().into_iter().map(|x| x.into()).collect();
+    let mut result_table = IndexMap::new();
+    let distro_mirror = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    for (mirror_name, mirror_info) in distro_mirror {
+        result_table.insert(mirror_name, mirror_info.desc);
+    }
+    if let Ok(custom_mirror) = read_distro_file::<CustomMirrorData, _>(CUSTOM_MIRROR_FILE) {
+        for (mirror_name, mirror_url) in custom_mirror {
+            result_table.insert(mirror_name, format!("[Custom] {}", mirror_url));
+        }
+    }
+    result_table.sort_keys();
+    println!("  A \'*\' or a highlight in front indicates that this mirror is in use:\n");
+    for (mirror_name, mirror_info) in &result_table {
+        if now_using_mirror.contains(&mirror_name) {
+            println!(
+                "{}",
+                format!("* {:<10}{}", mirror_name, result_table[mirror_name])
+                    .cyan()
+                    .bold()
+                    .to_string()
+            );
+            continue;
+        }
+        println!("  {:<10}{}", mirror_name, mirror_info);
+    }
+
+    Ok(())
 }
 
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<()> {
