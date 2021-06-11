@@ -28,6 +28,7 @@ const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
+const SPEEDTEST_FILE_SIZE: f32 = 398445.0;
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -108,9 +109,9 @@ fn main() -> Result<()> {
         }
         ("speedtest", _) => {
             let mirrors_score_table = get_mirror_score_table()?;
-            println!("{:<10}Speed", "Mrror");
+            println!(" {:<20}Speed", "Mirror");
             for (mirror_name, score) in mirrors_score_table {
-                println!("{:<10}{}ms", mirror_name, score);
+                println!(" {:<20}{}", mirror_name, score);
             }
         }
         ("set-fastest-mirror-as-default", _) => {
@@ -153,7 +154,7 @@ fn get_repo_data_path() -> PathBuf {
 fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     let mirrors_score_table = get_mirror_score_table()?;
     println!(
-        "Fastest mirror: {}, speed: {}s, Setting {} as default mirror ...",
+        "Fastest mirror: {}, speed: {}, Setting {} as default mirror ...",
         mirrors_score_table[0].0, mirrors_score_table[0].1, mirrors_score_table[0].0
     );
     set_mirror(mirrors_score_table[0].0.as_str(), &mut status)?;
@@ -161,7 +162,7 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     Ok(())
 }
 
-fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
+fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
     let mut mirrors_score_table = Vec::new();
     let mirrors_hashmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
     let bar = ProgressBar::new_spinner();
@@ -173,21 +174,38 @@ fn get_mirror_score_table() -> Result<Vec<(String, u128)>> {
             index,
             mirrors_hashmap.len()
         ));
-        if let Ok(score) = get_mirror_speed_score(mirror_name.as_str()) {
+        if let Ok(time) = get_mirror_speed_score(mirror_name.as_str()) {
+            let size = SPEEDTEST_FILE_SIZE / 1024.0;
+            let score = size / time;
             mirrors_score_table.push((mirror_name.to_owned(), score));
         } else {
             warn!("Failed to test mirror: {}!", mirror_name);
         }
     }
     bar.finish_and_clear();
-    mirrors_score_table.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+    mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
     if mirrors_score_table.is_empty() {
         return Err(anyhow!(
             "Get All mirror failed! Please check your network connection!"
         ));
     }
+    let mirrors_score_table = format_score_table(mirrors_score_table);
 
     Ok(mirrors_score_table)
+}
+
+fn format_score_table(mirrors_score_table: Vec<(String, f32)>) -> Vec<(String, String)> {
+    let mut result = Vec::new();
+    for (mirror_name, mut score) in mirrors_score_table {
+        let mut unit = "KB/s";
+        if score > 1000.0 {
+            score = score / 1024.0;
+            unit = "MB/s";
+        }
+        result.push((mirror_name, format!("{:.2}{}", score, unit)));
+    }
+
+    result
 }
 
 fn get_available_mirror(status: &Status) -> Result<()> {
@@ -406,7 +424,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
+fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     let timer = Instant::now();
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
@@ -416,7 +434,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<u128> {
     if response.is_success()
         && Sha1::from(response.bytes()?).digest().to_string() == SPEEDTEST_FILE_CHECKSUM
     {
-        return Ok(timer.elapsed().as_millis());
+        return Ok(timer.elapsed().as_secs_f32());
     }
 
     Err(anyhow!(
