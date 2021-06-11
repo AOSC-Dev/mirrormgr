@@ -11,6 +11,7 @@ use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
+    process::Command,
     time::{Duration, Instant},
 };
 use url::Url;
@@ -403,6 +404,11 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
     )?;
     println!("Writing /etc/apt/sources.list ...");
     fs::write(APT_SOURCE_FILE, source_list_str)?;
+    println!("Running apt-get update ...");
+    Command::new("apt-get")
+        .arg("update")
+        .spawn()?
+        .wait_with_output()?;
 
     Ok(())
 }
