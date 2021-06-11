@@ -130,7 +130,7 @@ fn main() -> Result<()> {
         ("reset-mirror", _) => {
             set_mirror("origin", &mut status)?;
         }
-        ("list-mirror", _) => {
+        ("list-mirrors", _) => {
             get_available_mirror(&status)?;
         }
         _ => {
