@@ -25,8 +25,8 @@ _apt-gen-list() {
             help)
                 cmd+="__help"
                 ;;
-            mirrors-speedtest)
-                cmd+="__mirrors__speedtest"
+            list-mirrors)
+                cmd+="__list__mirrors"
                 ;;
             remove-component)
                 cmd+="__remove__component"
@@ -37,17 +37,20 @@ _apt-gen-list() {
             remove-mirror)
                 cmd+="__remove__mirror"
                 ;;
+            reset-mirror)
+                cmd+="__reset__mirror"
+                ;;
             set-branch)
                 cmd+="__set__branch"
-                ;;
-            set-fastest-mirror-to-default)
-                cmd+="__set__fastest__mirror__to__default"
                 ;;
             set-mirror)
                 cmd+="__set__mirror"
                 ;;
-            set-mirror-to-default)
-                cmd+="__set__mirror__to__default"
+            set-mirror-as-default)
+                cmd+="__set__mirror__as__default"
+                ;;
+            speedtest)
+                cmd+="__speedtest"
                 ;;
             status)
                 cmd+="__status"
@@ -59,7 +62,7 @@ _apt-gen-list() {
 
     case "${cmd}" in
         apt-gen-list)
-            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror set-mirror-to-default status add-component remove-component add-custom-mirror remove-custom-mirror mirrors-speedtest set-fastest-mirror-to-default help"
+            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror set-mirror-as-default status add-component remove-component add-custom-mirror remove-custom-mirror speedtest reset-mirror list-mirrors help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -75,7 +78,7 @@ _apt-gen-list() {
             ;;
         
         apt__gen__list__add__component)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <COMPONENT>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -90,7 +93,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__add__custom__mirror)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <MIRROR_NAME> <MIRROR_URL> "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -105,7 +108,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__add__mirror)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <MIRROR>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -134,7 +137,7 @@ _apt-gen-list() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        apt__gen__list__mirrors__speedtest)
+        apt__gen__list__list__mirrors)
             opts=" -h -V  --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -150,7 +153,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__remove__component)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <COMPONENT>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -165,7 +168,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__remove__custom__mirror)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <MIRROR>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -180,7 +183,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__remove__mirror)
-            opts=" -h -V  --help --version  <INPUT>... "
+            opts=" -h -V  --help --version  <MIRROR>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -194,22 +197,7 @@ _apt-gen-list() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        apt__gen__list__set__branch)
-            opts=" -h -V  --help --version  <INPUT>... "
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        apt__gen__list__set__fastest__mirror__to__default)
+        apt__gen__list__reset__mirror)
             opts=" -h -V  --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -224,8 +212,8 @@ _apt-gen-list() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        apt__gen__list__set__mirror)
-            opts=" -h -V  --help --version  <INPUT>... "
+        apt__gen__list__set__branch)
+            opts=" -h -V  --help --version  <BRANCH_NAME>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -239,7 +227,37 @@ _apt-gen-list() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        apt__gen__list__set__mirror__to__default)
+        apt__gen__list__set__mirror)
+            opts=" -h -V  --help --version  <MIRROR>... "
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        apt__gen__list__set__mirror__as__default)
+            opts=" -h -V  --help --version  "
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        apt__gen__list__speedtest)
             opts=" -h -V  --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
