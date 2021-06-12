@@ -133,6 +133,14 @@ _arguments "${_arguments_options[@]}" \
 '--version[Prints version information]' \
 && ret=0
 ;;
+(set-fastest-mirror-as-default)
+_arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
 (help)
 _arguments "${_arguments_options[@]}" \
 '-h[Prints help information]' \
@@ -159,8 +167,9 @@ _apt-gen-list_commands() {
 "add-custom-mirror:Add custom repository mirror" \
 "remove-custom-mirror:Remove custom repository mirror" \
 "speedtest:Run speed-test on available mirrors" \
-"reset-mirror:Set fastest mirror as default" \
+"reset-mirror:Reset mirror to default" \
 "list-mirrors:Show available mirror list" \
+"set-fastest-mirror-as-default:Set fastest mirror as default" \
 "help:Prints this message or the help of the given subcommand(s)" \
     )
     _describe -t commands 'apt-gen-list commands' commands "$@"
@@ -234,6 +243,13 @@ _apt-gen-list__set-branch_commands() {
         
     )
     _describe -t commands 'apt-gen-list set-branch commands' commands "$@"
+}
+(( $+functions[_apt-gen-list__set-fastest-mirror-as-default_commands] )) ||
+_apt-gen-list__set-fastest-mirror-as-default_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'apt-gen-list set-fastest-mirror-as-default commands' commands "$@"
 }
 (( $+functions[_apt-gen-list__set-mirror_commands] )) ||
 _apt-gen-list__set-mirror_commands() {
