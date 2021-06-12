@@ -199,10 +199,10 @@ fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
 fn format_score_table(mirrors_score_table: Vec<(String, f32)>) -> Vec<(String, String)> {
     let mut result = Vec::new();
     for (mirror_name, mut score) in mirrors_score_table {
-        let mut unit = "KB/s";
+        let mut unit = "KiB/s";
         if score > 1000.0 {
             score /= 1024.0;
-            unit = "MB/s";
+            unit = "MiB/s";
         }
         result.push((mirror_name, format!("{:.2}{}", score, unit)));
     }
