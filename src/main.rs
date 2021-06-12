@@ -211,8 +211,6 @@ fn format_score_table(mirrors_score_table: Vec<(String, f32)>) -> Vec<(String, S
 }
 
 fn get_available_mirror(status: &Status) -> Result<()> {
-    let now_using_mirror: Vec<String> =
-        status.mirror.keys().into_iter().map(|x| x.into()).collect();
     let mut result_table = IndexMap::new();
     let distro_mirror = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
     for (mirror_name, mirror_info) in distro_mirror {
@@ -226,7 +224,7 @@ fn get_available_mirror(status: &Status) -> Result<()> {
     result_table.sort_keys();
     println!("  A \'*\' or a highlight in front indicates that this mirror is in use:\n");
     for (mirror_name, mirror_info) in &result_table {
-        if now_using_mirror.contains(&mirror_name) {
+        if status.mirror.get(mirror_name).is_some() {
             println!(
                 "{}",
                 format!("* {:<10}{}", mirror_name, result_table[mirror_name])
