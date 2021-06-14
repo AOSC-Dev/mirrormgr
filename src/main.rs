@@ -231,17 +231,12 @@ fn get_available_mirror(status: &Status) -> Result<()> {
     result_table.sort_keys();
     println!("  A \'*\' or a highlight in front indicates that this mirror is in use:\n");
     for (mirror_name, mirror_info) in &result_table {
+        let s = format!("{:<10}{}", mirror_name, mirror_info);
         if status.mirror.get(mirror_name).is_some() {
-            println!(
-                "{}",
-                format!("* {:<10}{}", mirror_name, result_table[mirror_name])
-                    .cyan()
-                    .bold()
-                    .to_string()
-            );
+            println!("* {}", s.cyan().bold().to_string());
             continue;
         }
-        println!("  {:<10}{}", mirror_name, mirror_info);
+        println!("  {}", s);
     }
 
     Ok(())
