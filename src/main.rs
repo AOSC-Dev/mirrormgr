@@ -390,17 +390,13 @@ fn read_status() -> Result<Status> {
                 if whoami::username() != "root" {
                     return Err(anyhow!("Status file is corrupt or too old, please run it with the root user to use the correct format"));
                 }
-                match trans_to_new_status_config(file) {
-                    Ok(status) => {
-                        fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
-                        return Ok(status);
-                    }
-                    Err(_) => {
-                        fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
-                        return Ok(Status::default());
-                    }
+                let status = match trans_to_new_status_config(file) {
+                    Ok(status) => status,
+                    Err(_) => Status::default(),
                 };
-            }
+                fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
+                return Ok(status);
+            },
         };
     }
     fs::create_dir_all("/var/lib/apt/gen")?;
