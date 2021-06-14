@@ -39,6 +39,13 @@ struct Status {
 }
 
 #[derive(Deserialize, Serialize)]
+struct OldStatus {
+    branch: String,
+    component: Vec<String>,
+    mirror: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize)]
 struct BranchInfo {
     desc: String,
     suites: Vec<String>,
@@ -381,13 +388,44 @@ fn read_status() -> Result<Status> {
             "Status file ({}) does not exist! please use root user to run apt-gen-list to create status file!", 
             STATUS_FILE));
     }
-    if let Ok(status) = fs::read(STATUS_FILE) {
-        return Ok(serde_json::from_slice(&status).unwrap_or_default());
+    if let Ok(file) = fs::read(STATUS_FILE) {
+        match serde_json::from_slice(&file) {
+            Ok(status) => return Ok(status),
+            Err(_) => {
+                if whoami::username() != "root" {
+                    return Err(anyhow!("Status file is corrupt or too old, please run it with the root user to use the correct format"));
+                }
+                match trans_to_new_status_config(file) {
+                    Ok(status) => {
+                        fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
+                        return Ok(status);
+                    }
+                    Err(_) => {
+                        fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
+                        return Ok(Status::default());
+                    }
+                };
+            }
+        };
     }
     fs::create_dir_all("/var/lib/apt/gen")?;
     fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
     Ok(Status::default())
+}
+
+fn trans_to_new_status_config(file: Vec<u8>) -> Result<Status> {
+    let status: OldStatus = serde_json::from_slice(&file)?;
+    let mut new_mirror: IndexMap<String, String> = IndexMap::new();
+    for mirror_name in &status.mirror {
+        new_mirror.insert(mirror_name.to_string(), get_mirror_url(&mirror_name)?);
+    }
+
+    Ok(Status {
+        branch: status.branch,
+        mirror: new_mirror,
+        component: status.component,
+    })
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
