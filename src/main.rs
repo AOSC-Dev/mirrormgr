@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use futures::future;
 use indexmap::{indexmap, IndexMap};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
@@ -14,6 +15,7 @@ use std::{
     process::Command,
     time::{Duration, Instant},
 };
+use tokio::{runtime::Builder, time};
 use url::Url;
 
 mod cli;
@@ -172,49 +174,49 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
 }
 
 fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
-    let mut mirrors_score_table = Vec::new();
-    let mirrors_hashmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
-    let bar = ProgressBar::new_spinner();
-    bar.enable_steady_tick(50);
-    for (index, mirror_name) in mirrors_hashmap.keys().enumerate() {
-        bar.set_message(format!(
-            "Benchmarking {} ({}/{}) ...",
-            mirror_name,
-            index,
-            mirrors_hashmap.len()
-        ));
-        if let Ok(time) = get_mirror_speed_score(mirror_name.as_str()) {
-            let size = SPEEDTEST_FILE_SIZE / 1024.0;
-            let score = size / time;
-            mirrors_score_table.push((mirror_name.to_owned(), score));
-        } else {
-            warn!("Failed to test mirror: {}!", mirror_name);
+    let runtime = Builder::new_multi_thread()
+        .enable_time()
+        .worker_threads(2)
+        .build()
+        .unwrap();
+    let surf_client = surf::Client::new();
+    let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    runtime.block_on(async move {
+        let task = mirrors_indexmap
+            .keys()
+            .into_iter()
+            .map(|x| get_mirror_speed_score(x.as_str(), &surf_client))
+            .collect::<Vec<_>>();
+        let bar = ProgressBar::new_spinner();
+        bar.set_message("Getting mirror...");
+        bar.enable_steady_tick(50);
+        let results = future::join_all(task).await;
+        let mut mirrors_score_table = Vec::new();
+        for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
+            if let Ok(time) = results[index] {
+                let size = SPEEDTEST_FILE_SIZE / 1024.0;
+                let score = size / time;
+                mirrors_score_table.push((mirror_name, score));
+            }
         }
-    }
-    bar.finish_and_clear();
-    mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
-    if mirrors_score_table.is_empty() {
-        return Err(anyhow!(
-            "Get All mirror failed! Please check your network connection!"
-        ));
-    }
-    let mirrors_score_table = format_score_table(mirrors_score_table);
-
-    Ok(mirrors_score_table)
-}
-
-fn format_score_table(mirrors_score_table: Vec<(String, f32)>) -> Vec<(String, String)> {
-    let mut result = Vec::new();
-    for (mirror_name, mut score) in mirrors_score_table {
-        let mut unit = "KiB/s";
-        if score > 1000.0 {
-            score /= 1024.0;
-            unit = "MiB/s";
+        mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
+        if mirrors_score_table.is_empty() {
+            return Err(anyhow!(
+                "Get All mirror failed! Please check your network connection!"
+            ));
         }
-        result.push((mirror_name, format!("{:.2}{}", score, unit)));
-    }
+        let mut result = Vec::new();
+        for (mirror_name, mut score) in mirrors_score_table {
+            let mut unit = "KiB/s";
+            if score > 1000.0 {
+                score /= 1024.0;
+                unit = "MiB/s";
+            }
+            result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
+        }
 
-    result
+        Ok(result)
+    })
 }
 
 fn get_available_mirror(status: &Status) -> Result<()> {
@@ -464,16 +466,17 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
-    let timer = Instant::now();
+async fn get_mirror_speed_score(mirror_name: &str, surf_client: &surf::Client) -> Result<f32> {
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
-    let response = attohttpc::get(download_url)
-        .timeout(Duration::from_secs(10))
-        .send()?;
-    if response.is_success() {
-        let file = response.bytes()?;
-        let result_time = timer.elapsed().as_secs_f32();
+    let timer = Instant::now();
+    let file = time::timeout(
+        Duration::from_secs(10),
+        surf_client.get(download_url).recv_bytes(),
+    )
+    .await?;
+    let result_time = timer.elapsed().as_secs_f32();
+    if let Ok(file) = file {
         if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
             return Ok(result_time);
         }
