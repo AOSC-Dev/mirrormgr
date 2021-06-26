@@ -40,7 +40,7 @@ struct Status {
     mirror: IndexMap<String, String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 struct OldStatus {
     branch: String,
     component: Vec<String>,
