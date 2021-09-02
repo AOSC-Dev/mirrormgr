@@ -1,7 +1,7 @@
 [package]
 name = "apt-gen-list"
-version = "0.4.8-alpha.0"
-authors = ["eatradish <sakiiily@aosc.io>"]
+version = "0.5.0-alpha.0"
+authors = ["eatradish <sakiiily@aosc.io>", "liushuyu <liushuyu@aosc.io>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
