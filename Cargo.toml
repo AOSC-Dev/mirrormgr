@@ -25,9 +25,9 @@ owo-colors = "2.0"
 futures = "0.3"
 tokio = {version = "^1", features = ["rt-multi-thread", "rt", "time"]}
 # i18n
-i18n-embed = { version = "0.12", features = ["fluent-system", "desktop-requester"]}
-i18n-embed-fl = "0.5"
-rust-embed = "^5"
+i18n-embed = { version = "0.13", features = ["fluent-system", "desktop-requester"]}
+i18n-embed-fl = "0.6"
+rust-embed = "^6"
 unic-langid = "0.9"
 
 [build-dependencies]
