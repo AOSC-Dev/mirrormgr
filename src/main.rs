@@ -465,7 +465,7 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
 }
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
-    let mut result = fl!("generated");
+    let mut result = format!("{}\n", fl!("generated"));
     let directory_name = get_directory_name()?;
     for (_, mirror_url) in &status.mirror {
         let debs_url = Url::parse(mirror_url)?.join(directory_name)?;

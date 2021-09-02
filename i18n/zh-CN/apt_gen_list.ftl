@@ -40,4 +40,4 @@ status-file-not-found = 状态文件 ({$path}) 不存在！请用 root 用户运
 status-file-read-error = 状态文件格式过老或已损坏，请用 root 用户运行该命令以修正状态文件！
 
 # file content
-generated = \# 本文件使用 apt-gen-list 生成，请勿编辑！
+generated = # 本文件使用 apt-gen-list 生成，请勿编辑！
