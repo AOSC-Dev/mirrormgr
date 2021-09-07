@@ -9,8 +9,14 @@ use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
-use std::{collections::HashMap, fs, path::{Path, PathBuf}, process::Command, time::{Duration, Instant}};
-use tokio::{runtime::Builder, time};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    time::{Duration, Instant},
+};
+use tokio::runtime::Builder;
 use url::Url;
 
 mod cli;
@@ -481,16 +487,18 @@ async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f3
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
     let timer = Instant::now();
-    let file = time::timeout(
-        Duration::from_secs(10),
-        client.get(download_url).send().await?.bytes(),
-    )
-    .await?;
+    let file = client
+        .get(download_url)
+        .timeout(Duration::from_secs(10))
+        .send()
+        .await?
+        .bytes()
+        .await;
     let result_time = timer.elapsed().as_secs_f32();
     if let Ok(file) = file {
-        dbg!(mirror_name);
-        if tokio::task::spawn_blocking(|| Sha1::from(file).digest().to_string()).await? == SPEEDTEST_FILE_CHECKSUM {
-            dbg!(mirror_name);
+        if Sha1::from(file).digest().to_string()
+            == SPEEDTEST_FILE_CHECKSUM
+        {
             return Ok(result_time);
         }
     }
