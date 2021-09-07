@@ -496,9 +496,7 @@ async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f3
         .await;
     let result_time = timer.elapsed().as_secs_f32();
     if let Ok(file) = file {
-        if Sha1::from(file).digest().to_string()
-            == SPEEDTEST_FILE_CHECKSUM
-        {
+        if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
             return Ok(result_time);
         }
     }
