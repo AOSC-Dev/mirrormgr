@@ -6,15 +6,10 @@ use lazy_static::lazy_static;
 use log::warn;
 use os_release::OsRelease;
 use owo_colors::OwoColorize;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
-use std::{
-    collections::HashMap,
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, fs, path::{Path, PathBuf}, process::Command, time::{Duration, Instant}};
 use tokio::{runtime::Builder, time};
 use url::Url;
 
@@ -182,17 +177,17 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
 
 fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
     let runtime = Builder::new_multi_thread()
-        .enable_time()
+        .enable_all()
         .worker_threads(2)
         .build()
         .unwrap();
-    let surf_client = surf::Client::new();
+    let client = reqwest::Client::new();
     let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
     runtime.block_on(async move {
         let task = mirrors_indexmap
             .keys()
             .into_iter()
-            .map(|x| get_mirror_speed_score(x.as_str(), &surf_client))
+            .map(|x| get_mirror_speed_score(x.as_str(), &client))
             .collect::<Vec<_>>();
         let bar = ProgressBar::new_spinner();
         bar.set_message(fl!("test-mirrors"));
@@ -482,18 +477,20 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-async fn get_mirror_speed_score(mirror_name: &str, surf_client: &surf::Client) -> Result<f32> {
+async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f32> {
     let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
         .join("misc/u-boot-sunxi-with-spl.bin")?;
     let timer = Instant::now();
     let file = time::timeout(
         Duration::from_secs(10),
-        surf_client.get(download_url).recv_bytes(),
+        client.get(download_url).send().await?.bytes(),
     )
     .await?;
     let result_time = timer.elapsed().as_secs_f32();
     if let Ok(file) = file {
-        if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+        dbg!(mirror_name);
+        if tokio::task::spawn_blocking(|| Sha1::from(file).digest().to_string()).await? == SPEEDTEST_FILE_CHECKSUM {
+            dbg!(mirror_name);
             return Ok(result_time);
         }
     }
