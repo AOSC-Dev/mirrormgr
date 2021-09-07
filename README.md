@@ -14,9 +14,9 @@ $ cargo build --release
 // install repo data, eg aosc:
 $ git clone https://github.com/AOSC-Dev/aosc-os-repository-data.git
 # mkdir -pv /usr/local/share/distro-repository-data/
+# install -Dvm644 aosc-os-repository-data/* -t /usr/local/share/distro-repository-data/
 
 // Install Shell completions
-# install -Dvm644 aosc-os-repository-data/* -t /usr/local/share/distro-repository-data/
 # install -dv "/usr/share/zsh/functions/Completion/Linux/"
 # install -Dvm644 completions/_apt-gen-list "/usr/share/zsh/functions/Completion/Linux/"
 # install -dv "/usr/share/fish/completions/"
