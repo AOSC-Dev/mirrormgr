@@ -1,6 +1,6 @@
 [package]
 name = "apt-gen-list"
-version = "0.5.1-alpha.0"
+version = "0.5.1"
 authors = ["eatradish <sakiiily@aosc.io>", "liushuyu <liushuyu@aosc.io>"]
 edition = "2018"
 
