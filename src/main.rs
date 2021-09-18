@@ -405,7 +405,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 }
 
 fn read_status() -> Result<Status> {
-    if !Path::new(STATUS_FILE).is_file() && whoami::username() != "root" {
+    if !Path::new(STATUS_FILE).is_file() && nix::unistd::geteuid().is_root() {
         return Err(anyhow!(fl!("status-file-not-found", path = STATUS_FILE)));
     }
     if let Ok(file) = fs::read(STATUS_FILE) {
