@@ -395,7 +395,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
         {
             status.component.push(entry_str);
         } else {
-            return Err(anyhow!(fl!("comp-not-found", comp = entry_str.clone())));
+            return Err(anyhow!(fl!("comp-not-found", comp = entry_str)));
         }
     }
     println!("{}", fl!("enable-comp", comp = entries.join(", ")));
@@ -405,20 +405,17 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
 }
 
 fn read_status() -> Result<Status> {
-    if !Path::new(STATUS_FILE).is_file() && !nix::unistd::geteuid().is_root() {
-        return Err(anyhow!(fl!("status-file-not-found", path = STATUS_FILE)));
+    if !Path::new(STATUS_FILE).is_file() && !is_root() {
+        panic!("{}", fl!("status-file-not-found", path = STATUS_FILE))
     }
     if let Ok(file) = fs::read(STATUS_FILE) {
         match serde_json::from_slice(&file) {
             Ok(status) => return Ok(status),
             Err(_) => {
-                if !nix::unistd::geteuid().is_root() {
-                    return Err(anyhow!(fl!("status-file-read-error")));
+                if !is_root() {
+                    panic!("{}", fl!("status-file-read-error"));
                 }
-                let status = match trans_to_new_status_config(file) {
-                    Ok(status) => status,
-                    Err(_) => Status::default(),
-                };
+                let status = trans_to_new_status_config(file).unwrap_or_default();
                 fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
                 return Ok(status);
             }
@@ -428,6 +425,10 @@ fn read_status() -> Result<Status> {
     fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
     Ok(Status::default())
+}
+
+fn is_root() -> bool {
+    nix::unistd::geteuid().is_root()
 }
 
 fn trans_to_new_status_config(file: Vec<u8>) -> Result<Status> {
