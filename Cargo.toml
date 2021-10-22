@@ -2,7 +2,7 @@
 name = "apt-gen-list"
 version = "0.5.3-alpha.0"
 authors = ["eatradish <sakiiily@aosc.io>", "liushuyu <liushuyu@aosc.io>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,10 +20,10 @@ indicatif = "0.16"
 sha1 = "0.6"
 os-release = "0.1"
 indexmap = {version = "1.6", features = ["serde-1"]}
-owo-colors = "2.0"
+owo-colors = "3.0"
 futures = "0.3"
 tokio = {version = "^1", features = ["rt-multi-thread", "rt", "time"]}
-nix = "0.20"
+nix = "0.23"
 # i18n
 i18n-embed = { version = "0.13", features = ["fluent-system", "desktop-requester"]}
 i18n-embed-fl = "0.6"
