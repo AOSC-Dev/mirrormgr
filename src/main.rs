@@ -412,7 +412,7 @@ fn read_status() -> Result<Status> {
         match serde_json::from_slice(&file) {
             Ok(status) => return Ok(status),
             Err(_) => {
-                if !is_root() {
+                if !is_root() || !is_aosc_os() {
                     panic!("{}", fl!("status-file-read-error"));
                 }
                 let status = trans_to_new_status_config(file).unwrap_or_default();
@@ -457,6 +457,13 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
     )?;
     println!("{}", fl!("write-sources"));
     fs::write(APT_SOURCE_FILE, source_list_str)?;
+    if is_aosc_os() {
+        println!("{}", fl!("run-atm-refresh"));
+        Command::new("atm")
+            .arg("refresh")
+            .spawn()?
+            .wait_with_output()?;
+    }
     println!("{}", fl!("run-apt"));
     Command::new("apt-get")
         .arg("update")
@@ -537,4 +544,12 @@ fn get_directory_name() -> Result<&'static str> {
         "AOSC OS/Retro" => Ok("debs-retro"),
         _ => Ok(""),
     }
+}
+
+fn is_aosc_os() -> bool {
+    if let Ok(release) = OsRelease::new() {
+        return release.name.contains("AOSC OS");
+    }
+
+    false
 }
