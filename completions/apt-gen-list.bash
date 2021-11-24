@@ -213,7 +213,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__set__branch)
-            opts=" -h -V  --help --version  <BRANCH_NAME>... "
+            opts=" -h -V  --help --version  <BRANCH>... "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
