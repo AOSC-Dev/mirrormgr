@@ -13,7 +13,7 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("set-branch")
                 .about("Set APT repository branch (e.g., stable)")
                 .arg(
-                    Arg::with_name("BRANCH_NAME")
+                    Arg::with_name("BRANCH")
                         .help("Input branch name here")
                         .max_values(1)
                         .required(true)

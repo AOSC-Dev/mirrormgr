@@ -299,7 +299,8 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     {
         return Err(anyhow!(fl!("custom-mirror-name-error")));
     }
-    if Url::parse(mirror_url).is_err() {
+    let url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
+    if url.scheme().is_empty() {
         return Err(anyhow!(fl!("custom-mirror-not-url")));
     }
     println!(
@@ -474,7 +475,7 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
 }
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
-    let mut result = format!("{}\n", fl!("generated"));
+    let mut result = format!("{}", fl!("generated"));
     let directory_name = get_directory_name()?;
     for (_, mirror_url) in &status.mirror {
         let debs_url = Url::parse(mirror_url)?.join(directory_name)?;
