@@ -109,6 +109,7 @@ pub fn build_cli() -> App<'static, 'static> {
                     .short("a")
                     .requires("MIRROR_NAME")
                     .requires("MIRROR_URL")
+                    .conflicts_with("also-set-mirror")
                 )
         )
         .subcommand(
