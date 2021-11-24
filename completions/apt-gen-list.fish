@@ -28,6 +28,8 @@ complete -c apt-gen-list -n "__fish_seen_subcommand_from add-component" -s h -l 
 complete -c apt-gen-list -n "__fish_seen_subcommand_from add-component" -s V -l version -d 'Prints version information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from remove-component" -s h -l help -d 'Prints help information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from remove-component" -s V -l version -d 'Prints version information'
+complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s s -l also-set-mirror -d 'also set mirror as default'
+complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s a -l also-add-mirror -d 'also add mirror to list'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s h -l help -d 'Prints help information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s V -l version -d 'Prints version information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from remove-custom-mirror" -s h -l help -d 'Prints help information'

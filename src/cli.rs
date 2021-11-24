@@ -77,7 +77,7 @@ pub fn build_cli() -> App<'static, 'static> {
                         .min_values(1)
                         .required(true)
                         .takes_value(true),
-                ),
+                )
         )
         .subcommand(
             SubCommand::with_name("add-custom-mirror")
@@ -93,6 +93,22 @@ pub fn build_cli() -> App<'static, 'static> {
                     .help("custom repository mirror url")
                     .required(true)
                     .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("also-set-mirror")
+                    .help("also set mirror as default")
+                    .long("also-set-mirror")
+                    .short("s")
+                    .requires("MIRROR_NAME")
+                    .requires("MIRROR_URL")
+                )
+                .arg(
+                    Arg::with_name("also-add-mirror")
+                    .help("also add mirror to list")
+                    .long("also-add-mirror")
+                    .short("a")
+                    .requires("MIRROR_NAME")
+                    .requires("MIRROR_URL")
                 )
         )
         .subcommand(

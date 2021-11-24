@@ -93,7 +93,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__add__custom__mirror)
-            opts=" -h -V  --help --version  <MIRROR_NAME> <MIRROR_URL> "
+            opts=" -s -a -h -V  --also-set-mirror --also-add-mirror --help --version  <MIRROR_NAME> <MIRROR_URL> "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

@@ -92,6 +92,10 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (add-custom-mirror)
 _arguments "${_arguments_options[@]}" \
+'-s[also set mirror as default]' \
+'--also-set-mirror[also set mirror as default]' \
+'-a[also add mirror to list]' \
+'--also-add-mirror[also add mirror to list]' \
 '-h[Prints help information]' \
 '--help[Prints help information]' \
 '-V[Prints version information]' \

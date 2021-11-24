@@ -97,7 +97,8 @@ fn main() -> Result<()> {
             set_mirror(args.value_of("MIRROR").unwrap(), &mut status)?;
         }
         ("add-mirror", Some(args)) => {
-            add_mirror(args, &mut status)?;
+            let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
+            add_mirror(entry, &mut status)?;
         }
         ("remove-mirror", Some(args)) => {
             remove_mirror(args, &mut status)?;
@@ -136,6 +137,11 @@ fn main() -> Result<()> {
             let custom_mirror_name = args.value_of("MIRROR_NAME").unwrap();
             let custom_mirror_url = args.value_of("MIRROR_URL").unwrap();
             add_custom_mirror(custom_mirror_name, custom_mirror_url)?;
+            if args.is_present("also-set-mirror") {
+                set_mirror(custom_mirror_name, &mut status)?;
+            } else if args.is_present("also-add-mirror") {
+                add_mirror(vec![custom_mirror_name], &mut status)?;
+            }
         }
         ("remove-custom-mirror", Some(args)) => {
             let custom_mirror_args = args.values_of("MIRROR").unwrap();
@@ -276,8 +282,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     Ok(())
 }
 
-fn add_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
-    let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
+fn add_mirror(entry: Vec<&str>, status: &mut Status) -> Result<()> {
     println!("{}", fl!("add-mirror", mirror = entry.join(", ")));
     for i in entry {
         let mirror_url = get_mirror_url(i)?;
