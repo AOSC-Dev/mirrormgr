@@ -110,7 +110,7 @@ fn main() -> Result<()> {
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("BRANCH").unwrap();
-            if read_distro_file::<BranchesData, _>(&*REPO_DATA_DIRECTORY)?
+            if read_distro_file::<BranchesData, _>(&*REPO_BRANCH_FILE)?
                 .get(new_branch)
                 .is_some()
             {
