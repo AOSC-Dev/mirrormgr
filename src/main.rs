@@ -419,7 +419,10 @@ fn read_status() -> Result<Status> {
         Ok(file) => match serde_json::from_slice(&file) {
             Ok(status) => Ok(status),
             Err(_) => {
-                panic!("{}", fl!("status-file-read-error"));
+                #[cfg(not(feature = "aosc"))]
+                {
+                    panic!("{}", fl!("status-file-read-error"));
+                }
                 #[cfg(feature = "aosc")]
                 {
                     if !is_root() {
