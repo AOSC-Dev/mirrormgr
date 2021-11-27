@@ -44,6 +44,7 @@ struct Status {
     mirror: IndexMap<String, String>,
 }
 
+#[cfg(feature = "aosc")]
 #[derive(Deserialize)]
 struct OldStatus {
     branch: String,
@@ -68,6 +69,7 @@ type MirrorsData = IndexMap<String, MirrorInfo>;
 type ComponentData = HashMap<String, String>;
 type CustomMirrorData = HashMap<String, String>;
 
+#[cfg(feature = "aosc")]
 impl Default for Status {
     fn default() -> Self {
         Status {
@@ -97,8 +99,7 @@ fn main() -> Result<()> {
             set_mirror(args.value_of("MIRROR").unwrap(), &mut status)?;
         }
         ("add-mirror", Some(args)) => {
-            let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
-            add_mirror(entry, &mut status)?;
+            add_mirror(args.values_of("MIRROR").unwrap().collect(), &mut status)?;
         }
         ("remove-mirror", Some(args)) => {
             remove_mirror(args, &mut status)?;
@@ -414,29 +415,44 @@ fn read_status() -> Result<Status> {
     if !Path::new(STATUS_FILE).is_file() && !is_root() {
         panic!("{}", fl!("status-file-not-found", path = STATUS_FILE))
     }
-    if let Ok(file) = fs::read(STATUS_FILE) {
-        match serde_json::from_slice(&file) {
-            Ok(status) => return Ok(status),
+    match fs::read(STATUS_FILE) {
+        Ok(file) => match serde_json::from_slice(&file) {
+            Ok(status) => Ok(status),
             Err(_) => {
-                if !is_root() || !is_aosc_os() {
-                    panic!("{}", fl!("status-file-read-error"));
-                }
-                let status = trans_to_new_status_config(file).unwrap_or_default();
-                fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
-                return Ok(status);
-            }
-        };
-    }
-    fs::create_dir_all("/var/lib/apt/gen")?;
-    fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
+                panic!("{}", fl!("status-file-read-error"));
+                #[cfg(feature = "aosc")]
+                {
+                    if !is_root() {
+                        return Err(anyhow!("{}", fl!("status-file-read-error")));
+                    }
+                    let status = trans_to_new_status_config(file).unwrap_or_default();
+                    fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
 
-    Ok(Status::default())
+                    return Ok(status);
+                }
+            }
+        },
+        Err(_) => {
+            #[cfg(feature = "aosc")]
+            {
+                fs::create_dir_all("/var/lib/apt/gen")?;
+                fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
+
+                return Ok(Status::default());
+            }
+            #[cfg(not(feature = "aosc"))]
+            {
+                panic!("{}", fl!("status-file-read-error"));
+            }
+        }
+    }
 }
 
 fn is_root() -> bool {
     nix::unistd::geteuid().is_root()
 }
 
+#[cfg(feature = "aosc")]
 fn trans_to_new_status_config(file: Vec<u8>) -> Result<Status> {
     let status: OldStatus = serde_json::from_slice(&file)?;
     let mut new_mirror: IndexMap<String, String> = IndexMap::new();
@@ -463,7 +479,8 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
     )?;
     println!("{}", fl!("write-sources"));
     fs::write(APT_SOURCE_FILE, source_list_str)?;
-    if is_aosc_os() {
+    #[cfg(feature = "aosc")]
+    {
         println!("{}", fl!("run-atm-refresh"));
         Command::new("atm")
             .arg("refresh")
@@ -533,29 +550,17 @@ fn get_mirror_url(mirror_name: &str) -> Result<String> {
 }
 
 fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
-    let branch_suites = read_distro_file::<BranchesData, _>(&*REPO_BRANCH_FILE)?
+    Ok(read_distro_file::<BranchesData, _>(&*REPO_BRANCH_FILE)?
         .get(branch_name)
         .ok_or_else(|| anyhow!(fl!("branch-data-error")))?
         .suites
-        .to_owned();
-
-    Ok(branch_suites)
+        .to_owned())
 }
 
 fn get_directory_name() -> Result<&'static str> {
-    let release = OsRelease::new()?;
-
-    match release.name.as_str() {
+    match OsRelease::new()?.name.as_str() {
         "AOSC OS" => Ok("debs"),
         "AOSC OS/Retro" => Ok("debs-retro"),
         _ => Ok(""),
     }
-}
-
-fn is_aosc_os() -> bool {
-    if let Ok(release) = OsRelease::new() {
-        return release.name.contains("AOSC OS");
-    }
-
-    false
 }
