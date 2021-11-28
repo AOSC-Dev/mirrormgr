@@ -325,19 +325,16 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
             path = CUSTOM_MIRROR_FILE
         )
     );
-    let mut custom_mirror_data;
-    match read_distro_file::<CustomMirrorData, _>(CUSTOM_MIRROR_FILE) {
-        Ok(v) => custom_mirror_data = v,
+    let mut custom_mirror_data = match read_distro_file::<CustomMirrorData, _>(CUSTOM_MIRROR_FILE) {
+        Ok(v) => v,
         Err(_) => {
             fs::create_dir_all("/etc/apt-gen-list")?;
             fs::File::create(CUSTOM_MIRROR_FILE)?;
-            custom_mirror_data = HashMap::new();
-            custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
-            fs::write(
-                CUSTOM_MIRROR_FILE,
-                serde_yaml::to_string(&custom_mirror_data)?,
-            )?;
-            return Ok(());
+            let mut result = HashMap::new();
+            result.insert(mirror_name.to_string(), mirror_url.to_string());
+            fs::write(CUSTOM_MIRROR_FILE, serde_yaml::to_string(&result)?)?;
+
+            result
         }
     };
     if custom_mirror_data.get(mirror_name).is_none() {
@@ -446,9 +443,10 @@ fn read_status() -> Result<Status> {
             #[cfg(feature = "aosc")]
             {
                 fs::create_dir_all("/var/lib/apt/gen")?;
-                fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
+                let status = Status::default();
+                fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
 
-                Ok(Status::default())
+                Ok(status)
             }
             #[cfg(not(feature = "aosc"))]
             {
