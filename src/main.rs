@@ -4,6 +4,7 @@ use indexmap::{indexmap, IndexMap};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
+use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -430,7 +431,7 @@ fn read_status() -> Result<Status> {
                     let status = trans_to_new_status_config(file).unwrap_or_default();
                     fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
 
-                    return Ok(status);
+                    Ok(status)
                 }
             }
         },
@@ -440,7 +441,7 @@ fn read_status() -> Result<Status> {
                 fs::create_dir_all("/var/lib/apt/gen")?;
                 fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
-                return Ok(Status::default());
+                Ok(Status::default())
             }
             #[cfg(not(feature = "aosc"))]
             {
@@ -560,7 +561,6 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
 }
 
 fn get_directory_name() -> &'static str {
-    use os_release::OsRelease;
     match OsRelease::new().unwrap().name.as_str() {
         "AOSC OS" => "debs",
         "AOSC OS/Retro" => "debs-retro",
