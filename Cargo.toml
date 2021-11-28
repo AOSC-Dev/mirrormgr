@@ -32,6 +32,7 @@ unic-langid = "0.9"
 
 [build-dependencies]
 clap ="2.33"
+os-release = "0.1"
 
 [features]
 aosc = []

@@ -151,8 +151,11 @@ fn main() -> Result<()> {
             }
         }
         ("reset-mirror", _) => {
-            status = Status::default();
-            apply_status(&status, gen_sources_list_string(&status)?)?;
+            #[cfg(feature = "aosc")]
+            {
+                status = Status::default();
+                apply_status(&status, gen_sources_list_string(&status)?)?;   
+            }
         }
         ("list-mirrors", _) => {
             get_available_mirror(&status)?;
@@ -223,7 +226,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
         for (mirror_name, mut score) in mirrors_score_table {
             let mut unit = "KiB/s";
             if score > 1000.0 {
-                score /= 1024.0;
+                score /= 1024.0;             
                 unit = "MiB/s";
             }
             result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
@@ -419,7 +422,8 @@ fn read_status() -> Result<Status> {
         Ok(file) => match serde_json::from_slice(&file) {
             Ok(status) => Ok(status),
             Err(_) => {
-                if cfg!(feature = "aosc") {
+               #[cfg(feature = "aosc")]
+               {
                     if !is_root() {
                         return Err(anyhow!("{}", fl!("status-file-read-error")));
                     }
@@ -427,18 +431,23 @@ fn read_status() -> Result<Status> {
                     fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
 
                     Ok(status)
-                } else {
+                }
+                #[cfg(not(feature = "aosc"))]
+                {
                     panic!("{}", fl!("status-file-read-error"));
                 }
             }
         },
         Err(_) => {
-            if cfg!(feature = "aosc") {
+            #[cfg(feature = "aosc")]
+            {
                 fs::create_dir_all("/var/lib/apt/gen")?;
                 fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
                 Ok(Status::default())
-            } else {
+            }
+            #[cfg(not(feature = "aosc"))]
+            {
                 panic!("{}", fl!("status-file-read-error"));
             }
         }
