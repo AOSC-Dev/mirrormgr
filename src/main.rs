@@ -154,7 +154,11 @@ fn main() -> Result<()> {
             #[cfg(feature = "aosc")]
             {
                 status = Status::default();
-                apply_status(&status, gen_sources_list_string(&status)?)?;   
+                apply_status(&status, gen_sources_list_string(&status)?)?;
+            }
+            #[cfg(not(feature = "aosc"))]
+            {
+                unreachable!();
             }
         }
         ("list-mirrors", _) => {
@@ -226,7 +230,7 @@ fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
         for (mirror_name, mut score) in mirrors_score_table {
             let mut unit = "KiB/s";
             if score > 1000.0 {
-                score /= 1024.0;             
+                score /= 1024.0;
                 unit = "MiB/s";
             }
             result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
@@ -422,8 +426,8 @@ fn read_status() -> Result<Status> {
         Ok(file) => match serde_json::from_slice(&file) {
             Ok(status) => Ok(status),
             Err(_) => {
-               #[cfg(feature = "aosc")]
-               {
+                #[cfg(feature = "aosc")]
+                {
                     if !is_root() {
                         return Err(anyhow!("{}", fl!("status-file-read-error")));
                     }
