@@ -150,8 +150,7 @@ fn main() -> Result<()> {
                 remove_custom_mirror(entry)?;
             }
         }
-        ("reset-mirror", _) =>
-        if cfg!(feature = "aosc") {
+        ("reset-mirror", _) => {
             status = Status::default();
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
@@ -420,12 +419,7 @@ fn read_status() -> Result<Status> {
         Ok(file) => match serde_json::from_slice(&file) {
             Ok(status) => Ok(status),
             Err(_) => {
-                #[cfg(not(feature = "aosc"))]
-                {
-                    panic!("{}", fl!("status-file-read-error"));
-                }
-                #[cfg(feature = "aosc")]
-                {
+                if cfg!(feature = "aosc") {
                     if !is_root() {
                         return Err(anyhow!("{}", fl!("status-file-read-error")));
                     }
@@ -433,19 +427,18 @@ fn read_status() -> Result<Status> {
                     fs::write(STATUS_FILE, serde_json::to_string(&status)?)?;
 
                     Ok(status)
+                } else {
+                    panic!("{}", fl!("status-file-read-error"));
                 }
             }
         },
         Err(_) => {
-            #[cfg(feature = "aosc")]
-            {
+            if cfg!(feature = "aosc") {
                 fs::create_dir_all("/var/lib/apt/gen")?;
                 fs::write(STATUS_FILE, serde_json::to_string(&Status::default())?)?;
 
                 Ok(Status::default())
-            }
-            #[cfg(not(feature = "aosc"))]
-            {
+            } else {
                 panic!("{}", fl!("status-file-read-error"));
             }
         }

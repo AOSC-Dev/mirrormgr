@@ -135,5 +135,11 @@ pub fn build_cli() -> App<'static, 'static> {
             SubCommand::with_name("set-fastest-mirror-as-default")
                 .about("Set fastest mirror as default")
         )
-        .subcommand(SubCommand::with_name("reset-mirror").about("Reset mirror to default"))
+        .subcommands({
+            if cfg!(feature = "aosc") {
+                vec![SubCommand::with_name("reset-mirror").about("Reset mirror to default")]
+            } else {
+                vec![]
+            }
+        })
 }
