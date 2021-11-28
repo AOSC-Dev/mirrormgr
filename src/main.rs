@@ -108,7 +108,7 @@ fn main() -> Result<()> {
             add_component(args, &mut status)?;
         }
         ("remove-component", Some(args)) => {
-            remove_component(args, status)?;
+            remove_component(args.values_of("COMPONENT").unwrap().collect(), status)?;
         }
         ("set-branch", Some(args)) => {
             let new_branch = args.value_of("BRANCH").unwrap();
@@ -150,8 +150,10 @@ fn main() -> Result<()> {
                 remove_custom_mirror(entry)?;
             }
         }
-        ("reset-mirror", _) => {
-            set_mirror("origin", &mut status)?;
+        ("reset-mirror", _) =>
+        if cfg!(feature = "aosc") {
+            status = Status::default();
+            apply_status(&status, gen_sources_list_string(&status)?)?;
         }
         ("list-mirrors", _) => {
             get_available_mirror(&status)?;
@@ -371,8 +373,7 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn remove_component(args: &clap::ArgMatches, mut status: Status) -> Result<()> {
-    let entry: Vec<&str> = args.values_of("COMPONENT").unwrap().collect();
+fn remove_component(entry: Vec<&str>, mut status: Status) -> Result<()> {
     if !entry.contains(&"main") {
         for i in &entry {
             if let Some(index) = status.component.iter().position(|v| v == i) {
