@@ -4,7 +4,6 @@ use indexmap::{indexmap, IndexMap};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use log::warn;
-use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -501,7 +500,7 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = format!("{}\n", fl!("generated"));
-    let directory_name = get_directory_name()?;
+    let directory_name = get_directory_name();
     for (_, mirror_url) in &status.mirror {
         let debs_url = Url::parse(mirror_url)?.join(directory_name)?;
         for branch in get_branch_suites(&status.branch)? {
@@ -560,10 +559,11 @@ fn get_branch_suites(branch_name: &str) -> Result<Vec<String>> {
         .to_owned())
 }
 
-fn get_directory_name() -> Result<&'static str> {
-    match OsRelease::new()?.name.as_str() {
-        "AOSC OS" => Ok("debs"),
-        "AOSC OS/Retro" => Ok("debs-retro"),
-        _ => Ok(""),
+fn get_directory_name() -> &'static str {
+    use os_release::OsRelease;
+    match OsRelease::new().unwrap().name.as_str() {
+        "AOSC OS" => "debs",
+        "AOSC OS/Retro" => "debs-retro",
+        _ => "",
     }
 }
