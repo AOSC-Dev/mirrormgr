@@ -331,19 +331,22 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     {
         return Err(anyhow!(fl!("custom-mirror-name-error")));
     }
-    let mut url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
+    let url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
     if url.scheme().is_empty() {
         return Err(anyhow!(fl!("custom-mirror-not-url")));
     }
-    if cfg!(feature = "aosc") && url
+    let url = if cfg!(feature = "aosc") && url
             .path_segments()
             .map(|c| c.collect::<Vec<_>>())
             .unwrap()
             .last()
             == Some(&"debs") {
         warn!("{}", fl!("debs-path-in-url"));
-        url = url.join("..")?
-    }
+        
+        url.join("..")?
+    } else {
+        url
+    };
     println!(
         "{}",
         fl!(
