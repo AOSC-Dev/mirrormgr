@@ -36,7 +36,7 @@ const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
-const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.1064453125;
+const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
 
 #[derive(Deserialize, Serialize)]
 struct Status {
