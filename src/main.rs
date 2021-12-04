@@ -331,9 +331,18 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     {
         return Err(anyhow!(fl!("custom-mirror-name-error")));
     }
-    let url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
+    let mut url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
     if url.scheme().is_empty() {
         return Err(anyhow!(fl!("custom-mirror-not-url")));
+    }
+    if cfg!(feature = "aosc") && url
+            .path_segments()
+            .map(|c| c.collect::<Vec<_>>())
+            .unwrap()
+            .last()
+            == Some(&"debs") {
+        warn!("{}", fl!("debs-path-in-url"));
+        url = url.join("..")?
     }
     println!(
         "{}",
@@ -349,14 +358,14 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
             fs::create_dir_all("/etc/apt-gen-list")?;
             fs::File::create(CUSTOM_MIRROR_FILE)?;
             let mut result = HashMap::new();
-            result.insert(mirror_name.to_string(), mirror_url.to_string());
+            result.insert(mirror_name.to_string(), url.to_string());
             fs::write(CUSTOM_MIRROR_FILE, serde_yaml::to_string(&result)?)?;
 
             result
         }
     };
     if custom_mirror_data.get(mirror_name).is_none() {
-        custom_mirror_data.insert(mirror_name.to_string(), mirror_url.to_string());
+        custom_mirror_data.insert(mirror_name.to_string(), url.to_string());
     } else {
         warn!(
             "{}",
