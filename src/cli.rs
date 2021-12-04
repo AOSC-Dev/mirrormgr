@@ -126,6 +126,12 @@ pub fn build_cli() -> App<'static, 'static> {
         .subcommand(
             SubCommand::with_name("speedtest")
                 .about("Run speed-test on available mirrors")
+                .arg(
+                    Arg::with_name("precise")
+                    .help("Accurately test out the speed of each source, but it takes more time")
+                    .long("precise")
+                    .short("p")
+                )
         )
         .subcommand(
             SubCommand::with_name("list-mirrors")

@@ -62,7 +62,7 @@ _apt-gen-list() {
 
     case "${cmd}" in
         apt-gen-list)
-            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror status add-component remove-component add-custom-mirror remove-custom-mirror speedtest reset-mirror list-mirrors set-fastest-mirror-as-default help"
+            opts=" -h -V  --help --version   set-branch set-mirror add-mirror remove-mirror status add-component remove-component add-custom-mirror remove-custom-mirror speedtest list-mirrors set-fastest-mirror-as-default reset-mirror help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -258,7 +258,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__speedtest)
-            opts=" -h -V  --help --version  "
+            opts=" -p -h -V  --precise --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

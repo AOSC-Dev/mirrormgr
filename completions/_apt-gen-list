@@ -115,14 +115,8 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (speedtest)
 _arguments "${_arguments_options[@]}" \
-'-h[Prints help information]' \
-'--help[Prints help information]' \
-'-V[Prints version information]' \
-'--version[Prints version information]' \
-&& ret=0
-;;
-(reset-mirror)
-_arguments "${_arguments_options[@]}" \
+'-p[Accurately test out the speed of each source, but it takes more time]' \
+'--precise[Accurately test out the speed of each source, but it takes more time]' \
 '-h[Prints help information]' \
 '--help[Prints help information]' \
 '-V[Prints version information]' \
@@ -138,6 +132,14 @@ _arguments "${_arguments_options[@]}" \
 && ret=0
 ;;
 (set-fastest-mirror-as-default)
+_arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
+(reset-mirror)
 _arguments "${_arguments_options[@]}" \
 '-h[Prints help information]' \
 '--help[Prints help information]' \
@@ -171,9 +173,9 @@ _apt-gen-list_commands() {
 "add-custom-mirror:Add custom repository mirror" \
 "remove-custom-mirror:Remove custom repository mirror" \
 "speedtest:Run speed-test on available mirrors" \
-"reset-mirror:Reset mirror to default" \
 "list-mirrors:Show available mirror list" \
 "set-fastest-mirror-as-default:Set fastest mirror as default" \
+"reset-mirror:Reset mirror to default" \
 "help:Prints this message or the help of the given subcommand(s)" \
     )
     _describe -t commands 'apt-gen-list commands' commands "$@"

@@ -123,8 +123,8 @@ fn main() -> Result<()> {
             println!("{}", fl!("set-branch", branch = new_branch));
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
-        ("speedtest", _) => {
-            let mirrors_score_table = get_mirror_score_table()?;
+        ("speedtest", Some(args)) => {
+            let mirrors_score_table = get_mirror_score_table(args.is_present("precise"))?;
             println!(" {:<20}Speed", "Mirror");
             println!(" {:<20}---", "---");
             for (mirror_name, score) in mirrors_score_table {
@@ -182,7 +182,7 @@ fn get_repo_data_path() -> PathBuf {
 }
 
 fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
-    let mirrors_score_table = get_mirror_score_table()?;
+    let mirrors_score_table = get_mirror_score_table(false)?;
     println!(
         "{}",
         fl!(
@@ -196,48 +196,69 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     Ok(())
 }
 
-fn get_mirror_score_table() -> Result<Vec<(String, String)>> {
-    let runtime = Builder::new_multi_thread()
-        .enable_all()
-        .worker_threads(2)
-        .build()
-        .unwrap();
-    let client = reqwest::Client::new();
+fn get_mirror_score_table(is_precise: bool) -> Result<Vec<(String, String)>> {
     let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
-    runtime.block_on(async move {
-        let task = mirrors_indexmap
-            .keys()
-            .into_iter()
-            .map(|x| get_mirror_speed_score(x.as_str(), &client))
-            .collect::<Vec<_>>();
-        let bar = ProgressBar::new_spinner();
+    let bar = ProgressBar::new_spinner();
+    let mut mirrors_score_table = if !is_precise {
         bar.set_message(fl!("test-mirrors"));
-        bar.enable_steady_tick(50);
-        let results = future::join_all(task).await;
-        let mut mirrors_score_table = Vec::new();
+        let runtime = Builder::new_multi_thread()
+            .enable_all()
+            .worker_threads(2)
+            .build()
+            .unwrap();
+        let client = reqwest::Client::new();
+        runtime.block_on(async move {
+            let task = mirrors_indexmap
+                .keys()
+                .into_iter()
+                .map(|x| get_mirror_speed_score(x, &client))
+                .collect::<Vec<_>>();
+            bar.enable_steady_tick(50);
+            let results = future::join_all(task).await;
+            let mut result = Vec::new();
+            for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
+                if let Ok(time) = results[index] {
+                    let size = SPEEDTEST_FILE_SIZE / 1024.0;
+                    let score = size / time;
+                    result.push((mirror_name.to_owned(), score));
+                }
+            }
+
+            result
+        })
+    } else {
+        let mut result = Vec::new();
         for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
-            if let Ok(time) = results[index] {
+            bar.set_message(fl!(
+                "test-mirrors-sync",
+                count = index,
+                all = mirrors_indexmap.len()
+            ));
+            bar.enable_steady_tick(50);
+            if let Ok(time) = get_mirror_speed_score_precise(mirror_name) {
                 let size = SPEEDTEST_FILE_SIZE / 1024.0;
                 let score = size / time;
-                mirrors_score_table.push((mirror_name, score));
+                result.push((mirror_name.to_owned(), score));
             }
-        }
-        mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
-        if mirrors_score_table.is_empty() {
-            return Err(anyhow!(fl!("mirror-test-failed")));
-        }
-        let mut result = Vec::new();
-        for (mirror_name, mut score) in mirrors_score_table {
-            let mut unit = "KiB/s";
-            if score > 1000.0 {
-                score /= 1024.0;
-                unit = "MiB/s";
-            }
-            result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
         }
 
-        Ok(result)
-    })
+        result
+    };
+    mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
+    if mirrors_score_table.is_empty() {
+        return Err(anyhow!(fl!("mirror-test-failed")));
+    }
+    let mut result = Vec::new();
+    for (mirror_name, mut score) in mirrors_score_table {
+        let mut unit = "KiB/s";
+        if score > 1000.0 {
+            score /= 1024.0;
+            unit = "MiB/s";
+        }
+        result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
+    }
+
+    Ok(result)
 }
 
 fn get_available_mirror(status: &Status) -> Result<()> {
@@ -538,6 +559,22 @@ async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f3
         if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
             return Ok(result_time);
         }
+    }
+
+    Err(anyhow!(fl!("mirror-error", mirror = mirror_name)))
+}
+
+fn get_mirror_speed_score_precise(mirror_name: &str) -> Result<f32> {
+    let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
+        .join("misc/u-boot-sunxi-with-spl.bin")?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()?;
+    let timer = Instant::now();
+    let file = client.get(download_url).send()?.bytes()?;
+    let result_time = timer.elapsed().as_secs_f32();
+    if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+        return Ok(result_time);
     }
 
     Err(anyhow!(fl!("mirror-error", mirror = mirror_name)))
