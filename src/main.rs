@@ -124,7 +124,7 @@ fn main() -> Result<()> {
             apply_status(&status, gen_sources_list_string(&status)?)?;
         }
         ("speedtest", Some(args)) => {
-            let mirrors_score_table = get_mirror_score_table(args.is_present("precise"))?;
+            let mirrors_score_table = get_mirror_score_table(args.is_present("parallel"))?;
             println!(" {:<20}Speed", "Mirror");
             println!(" {:<20}---", "---");
             for (mirror_name, score) in mirrors_score_table {
@@ -196,10 +196,10 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     Ok(())
 }
 
-fn get_mirror_score_table(is_precise: bool) -> Result<Vec<(String, String)>> {
+fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
     let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
     let bar = ProgressBar::new_spinner();
-    let mut mirrors_score_table = if !is_precise {
+    let mut mirrors_score_table = if is_parallel {
         bar.set_message(fl!("test-mirrors"));
         let runtime = Builder::new_multi_thread()
             .enable_all()

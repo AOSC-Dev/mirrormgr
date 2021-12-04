@@ -34,7 +34,7 @@ complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s h
 complete -c apt-gen-list -n "__fish_seen_subcommand_from add-custom-mirror" -s V -l version -d 'Prints version information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from remove-custom-mirror" -s h -l help -d 'Prints help information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from remove-custom-mirror" -s V -l version -d 'Prints version information'
-complete -c apt-gen-list -n "__fish_seen_subcommand_from speedtest" -s p -l precise -d 'Accurately test out the speed of each source, but it takes more time'
+complete -c apt-gen-list -n "__fish_seen_subcommand_from speedtest" -s p -l parallel -d 'Test mirror performance concurrently, test will take a shorter amount of time, but results will only serve as a rough estimate and could vary between runs'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from speedtest" -s h -l help -d 'Prints help information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from speedtest" -s V -l version -d 'Prints version information'
 complete -c apt-gen-list -n "__fish_seen_subcommand_from list-mirrors" -s h -l help -d 'Prints help information'

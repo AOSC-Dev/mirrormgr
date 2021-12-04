@@ -258,7 +258,7 @@ _apt-gen-list() {
             return 0
             ;;
         apt__gen__list__speedtest)
-            opts=" -p -h -V  --precise --help --version  "
+            opts=" -p -h -V  --parallel --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

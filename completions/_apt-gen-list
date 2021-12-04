@@ -115,8 +115,8 @@ _arguments "${_arguments_options[@]}" \
 ;;
 (speedtest)
 _arguments "${_arguments_options[@]}" \
-'-p[Accurately test out the speed of each source, but it takes more time]' \
-'--precise[Accurately test out the speed of each source, but it takes more time]' \
+'-p[Test mirror performance concurrently, test will take a shorter amount of time, but results will only serve as a rough estimate and could vary between runs]' \
+'--parallel[Test mirror performance concurrently, test will take a shorter amount of time, but results will only serve as a rough estimate and could vary between runs]' \
 '-h[Prints help information]' \
 '--help[Prints help information]' \
 '-V[Prints version information]' \
