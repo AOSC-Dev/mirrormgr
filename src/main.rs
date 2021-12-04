@@ -35,7 +35,8 @@ const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
-const SPEEDTEST_FILE_SIZE: f32 = 398445.0;
+const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
+const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.1064453125;
 
 #[derive(Deserialize, Serialize)]
 struct Status {
@@ -211,16 +212,14 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
             let task = mirrors_indexmap
                 .keys()
                 .into_iter()
-                .map(|x| get_mirror_speed_score(x, &client))
+                .map(|x| get_mirror_speed_score_parallel(x, &client))
                 .collect::<Vec<_>>();
             bar.enable_steady_tick(50);
             let results = future::join_all(task).await;
             let mut result = Vec::new();
             for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
                 if let Ok(time) = results[index] {
-                    let size = SPEEDTEST_FILE_SIZE / 1024.0;
-                    let score = size / time;
-                    result.push((mirror_name.to_owned(), score));
+                    result.push((mirror_name.to_owned(), SPEEDTEST_FILE_SIZE_KIB / time));
                 }
             }
 
@@ -235,10 +234,8 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
                 all = mirrors_indexmap.len()
             ));
             bar.enable_steady_tick(50);
-            if let Ok(time) = get_mirror_speed_score_precise(mirror_name) {
-                let size = SPEEDTEST_FILE_SIZE / 1024.0;
-                let score = size / time;
-                result.push((mirror_name.to_owned(), score));
+            if let Ok(time) = get_mirror_speed_score(mirror_name) {
+                result.push((mirror_name.to_owned(), SPEEDTEST_FILE_SIZE_KIB / time));
             }
         }
 
@@ -543,9 +540,8 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     Ok(result)
 }
 
-async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f32> {
-    let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
-        .join("misc/u-boot-sunxi-with-spl.bin")?;
+async fn get_mirror_speed_score_parallel(mirror_name: &str, client: &Client) -> Result<f32> {
+    let download_url = Url::parse(&get_mirror_url(mirror_name)?)?.join(DOWNLOAD_PATH)?;
     let timer = Instant::now();
     let file = client
         .get(download_url)
@@ -564,9 +560,8 @@ async fn get_mirror_speed_score(mirror_name: &str, client: &Client) -> Result<f3
     Err(anyhow!(fl!("mirror-error", mirror = mirror_name)))
 }
 
-fn get_mirror_speed_score_precise(mirror_name: &str) -> Result<f32> {
-    let download_url = Url::parse(get_mirror_url(mirror_name)?.as_str())?
-        .join("misc/u-boot-sunxi-with-spl.bin")?;
+fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
+    let download_url = Url::parse(&get_mirror_url(mirror_name)?)?.join(DOWNLOAD_PATH)?;
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(10))
         .build()?;
