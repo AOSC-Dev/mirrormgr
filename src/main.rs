@@ -332,26 +332,32 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
         return Err(anyhow!(fl!("custom-mirror-name-error")));
     }
     let url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
-    let url = if cfg!(feature = "aosc")
-        && vec![Some(&"debs"), Some(&"debs-retro")].contains(
+    #[cfg(feature = "aosc")]
+    {
+        if vec![Some(&"debs"), Some(&"debs-retro")].contains(
             &url.path_segments()
                 .map(|c| c.collect::<Vec<_>>())
                 .ok_or_else(|| anyhow!(fl!("custom-mirror-not-url")))?
                 .last(),
-        )
-        && reqwest::blocking::Client::builder()
+        ) {
+            return Err(anyhow!(fl!("debs-path-in-url")));
+        }
+        println!("{}", fl!("trying-get-mirror"));
+        let get_mirror = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()?
             .get(url.join("pool/stable/InRelease")?)
-            .send()
-            .is_ok()
+            .send();
+        if get_mirror.is_err() {
+            return Err(anyhow!(fl!("download-mirror-metadata-failed")));
+        }
+    }
+    #[cfg(not(feature = "aosc"))]
     {
-        warn!("{}", fl!("debs-path-in-url"));
-
-        url.join("..")?
-    } else {
-        url
-    };
+        if url.scheme().is_empty() {
+            return Err(fl!("custom-mirror-not-url"));
+        }
+    }
     println!(
         "{}",
         fl!(
