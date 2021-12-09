@@ -355,7 +355,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     #[cfg(not(feature = "aosc"))]
     {
         if url.scheme().is_empty() {
-            return Err(fl!("custom-mirror-not-url"));
+            return Err(anyhow!(fl!("custom-mirror-not-url")));
         }
     }
     println!(
