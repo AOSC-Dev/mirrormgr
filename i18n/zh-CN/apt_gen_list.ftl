@@ -42,7 +42,7 @@ no-delete-only-mirror = 无法移除唯一启用的镜像源！
 no-delete-only-comp = 程序已拒绝删除必需组件 "main" 。
 status-file-not-found = 状态文件 ({$path}) 不存在！请用 root 用户运行 apt-gen-list 以创建状态文件！
 status-file-read-error = 状态文件格式过老或已损坏，请用 root 用户运行该命令以修正状态文件！
-debs-path-in-url = pt-gen-list 发现您的自定义 URL 结尾发现 '/debs' 字段，这是配置自定义软件源时的一大常见错误。请删去此节后重试。
+debs-path-in-url = apt-gen-list 发现您的自定义 URL 结尾发现 '/debs' 字段，这是配置自定义软件源时的一大常见错误。请删去此节后重试。
 download-mirror-metadata-failed = 从自定义软件源元数据下载失败：您的软件源配置信息可能不正确。
 
 # file content
