@@ -49,6 +49,7 @@ dependencies = [
  "serde_yaml",
  "sha1",
  "tokio",
+ "toml",
  "unic-langid",
  "url",
 ]

@@ -12,6 +12,7 @@ use sha1::Sha1;
 use std::{
     collections::HashMap,
     fs,
+    io::Read,
     path::{Path, PathBuf},
     process::Command,
     time::{Duration, Instant},
@@ -34,6 +35,7 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
+const OMAKASE_CONFIG_FILE: &str = "/etc/omakase/config.toml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
@@ -63,6 +65,26 @@ struct BranchInfo {
 struct MirrorInfo {
     desc: String,
     url: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct OmakaseConfig {
+    #[serde(flatten)]
+    other: toml::Value,
+    repo: HashMap<String, OmakaseMirror>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct OmakaseMirror {
+    url: String,
+    distribution: String,
+    components: Vec<String>,
+    keys: Vec<String>,
+}
+
+struct FrontendStatus {
+    has_apt: bool,
+    has_oma: bool,
 }
 
 type BranchesData = HashMap<String, BranchInfo>;
@@ -122,7 +144,7 @@ fn main() -> Result<()> {
                 return Err(anyhow!(fl!("branch-not-found")));
             }
             println!("{}", fl!("set-branch", branch = new_branch));
-            apply_status(&status, gen_sources_list_string(&status)?)?;
+            apply_status(&status)?;
         }
         ("speedtest", Some(args)) => {
             let mirrors_score_table = get_mirror_score_table(args.is_present("parallel"))?;
@@ -155,7 +177,7 @@ fn main() -> Result<()> {
             #[cfg(feature = "aosc")]
             {
                 status = Status::default();
-                apply_status(&status, gen_sources_list_string(&status)?)?;
+                apply_status(&status)?;
             }
             #[cfg(not(feature = "aosc"))]
             {
@@ -274,7 +296,7 @@ fn get_available_mirror(status: &Status) -> Result<()> {
     for (mirror_name, mirror_info) in &result_table {
         let s = format!("{:<10}{}", mirror_name, mirror_info);
         if status.mirror.get(mirror_name).is_some() {
-            println!("* {}", s.cyan().bold().to_string());
+            println!("* {}", s.cyan().bold());
             continue;
         }
         println!("  {}", s);
@@ -286,7 +308,7 @@ fn get_available_mirror(status: &Status) -> Result<()> {
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<()> {
     status.mirror = indexmap! {new_mirror.to_string() => get_mirror_url(new_mirror)?};
     println!("{}", fl!("set-mirror", mirror = new_mirror));
-    apply_status(&*status, gen_sources_list_string(&*status)?)?;
+    apply_status(&*status)?;
 
     Ok(())
 }
@@ -304,7 +326,7 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
         }
     }
     println!("{}", fl!("remove-mirror", mirror = entry.join(", ")));
-    apply_status(&*status, gen_sources_list_string(status)?)?;
+    apply_status(&*status)?;
 
     Ok(())
 }
@@ -319,7 +341,7 @@ fn add_mirror(entry: Vec<&str>, status: &mut Status) -> Result<()> {
             status.mirror.insert(i.to_string(), mirror_url);
         }
     }
-    apply_status(&*status, gen_sources_list_string(status)?)?;
+    apply_status(&*status)?;
 
     Ok(())
 }
@@ -430,7 +452,7 @@ fn remove_component(entry: Vec<&str>, mut status: Status) -> Result<()> {
         return Err(anyhow!(fl!("no-delete-only-comp")));
     }
     println!("{}", fl!("disable-comp", comp = entry.join(", ")));
-    apply_status(&status, gen_sources_list_string(&status)?)?;
+    apply_status(&status)?;
 
     Ok(())
 }
@@ -451,7 +473,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
         }
     }
     println!("{}", fl!("enable-comp", comp = entries.join(", ")));
-    apply_status(status, gen_sources_list_string(status)?)?;
+    apply_status(status)?;
 
     Ok(())
 }
@@ -520,14 +542,13 @@ fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Re
     Ok(serde_yaml::from_slice(&fs::read(file)?)?)
 }
 
-fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
+fn apply_status(status: &Status) -> Result<()> {
     println!("{}", fl!("write-status"));
     fs::write(
         STATUS_FILE,
         format!("{}\n", serde_json::to_string(&status)?),
     )?;
-    println!("{}", fl!("write-sources"));
-    fs::write(APT_SOURCE_FILE, source_list_str)?;
+    let frontend_status = get_frontend_status();
     #[cfg(feature = "aosc")]
     {
         println!("{}", fl!("run-atm-refresh"));
@@ -536,13 +557,47 @@ fn apply_status(status: &Status, source_list_str: String) -> Result<()> {
             .spawn()?
             .wait_with_output()?;
     }
-    println!("{}", fl!("run-apt"));
-    Command::new("apt-get")
-        .arg("update")
-        .spawn()?
-        .wait_with_output()?;
+    if frontend_status.has_apt {
+        let source_list_str = gen_sources_list_string(status)?;
+        println!("{}", fl!("write-sources"));
+        fs::write(APT_SOURCE_FILE, source_list_str)?;
+        println!("{}", fl!("run-apt"));
+        Command::new("apt-get")
+            .arg("update")
+            .spawn()?
+            .wait_with_output()?;
+    }
+    if frontend_status.has_oma {
+        let omakase_config_str = gen_omakase_config_string(status)?;
+        println!("{}", fl!("write-omakase-config"));
+        fs::write(OMAKASE_CONFIG_FILE, omakase_config_str)?;
+        println!("{}", fl!("run-oma"));
+        Command::new("oma")
+            .arg("refresh")
+            .spawn()?
+            .wait_with_output()?;
+    }
 
     Ok(())
+}
+
+fn get_frontend_status() -> FrontendStatus {
+    let mut has_oma = false;
+    let mut has_apt = false;
+    let which_oma_output = Command::new("which").arg("oma").output();
+    let which_apt_output = Command::new("which").arg("apt").output();
+    if let Ok(which_oma_output) = which_oma_output {
+        if which_oma_output.status.success() {
+            has_oma = true;
+        }
+    }
+    if let Ok(which_apt_output) = which_apt_output {
+        if which_apt_output.status.success() {
+            has_apt = true;
+        }
+    }
+
+    FrontendStatus { has_apt, has_oma }
 }
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
@@ -561,6 +616,54 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     }
 
     Ok(result)
+}
+
+fn gen_omakase_config_string(status: &Status) -> Result<String> {
+    let mut config_file = std::fs::File::open(OMAKASE_CONFIG_FILE)?;
+    let mut buf = vec![];
+    config_file.read_to_end(&mut buf)?;
+    let mut omakase_config: OmakaseConfig = toml::from_slice(&buf)?;
+    let repo_list = omakase_config.repo;
+    let mut new_repo_map = HashMap::new();
+    fn format_url(url: &str) -> String {
+        if url.ends_with("/") {
+            url.to_string()
+        } else {
+            format!("{}/", url)
+        }
+    }
+    for (name, url) in &status.mirror {
+        let url = format_url(url);
+        new_repo_map.insert(
+            format!("repo.{}", name),
+            OmakaseMirror {
+                url: format!("{}debs", url),
+                distribution: status.branch.to_owned(),
+                components: status.component.to_owned(),
+                keys: vec!["aosc.gpg".to_string()],
+            },
+        );
+    }
+    for (name, repo) in repo_list {
+        if new_repo_map.get(&name).is_some() {
+            continue;
+        }
+        if let Some((_, url)) = status.mirror.first() {
+            let url = format_url(url);
+            new_repo_map.insert(
+                name.to_string(),
+                OmakaseMirror {
+                    url: format!("{}debs", url),
+                    distribution: repo.distribution,
+                    components: repo.components,
+                    keys: repo.keys,
+                },
+            );
+        }
+    }
+    omakase_config.repo = new_repo_map;
+
+    Ok(toml::to_string(&omakase_config)?)
 }
 
 async fn get_mirror_speed_score_parallel(mirror_name: &str, client: &Client) -> Result<f32> {
