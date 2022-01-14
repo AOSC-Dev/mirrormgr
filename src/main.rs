@@ -635,7 +635,7 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
     for (name, url) in &status.mirror {
         let url = format_url(url);
         new_repo_map.insert(
-            format!("repo.{}", name),
+            name.to_owned(),
             OmakaseMirror {
                 url: format!("{}debs", url),
                 distribution: status.branch.to_owned(),
@@ -645,6 +645,11 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
         );
     }
     for (name, repo) in repo_list {
+        let name = if let Some(name) = name.strip_prefix("repo.") {
+            name.to_owned()
+        } else {
+            name
+        };
         if new_repo_map.get(&name).is_some() {
             continue;
         }
