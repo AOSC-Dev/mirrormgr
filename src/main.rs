@@ -82,8 +82,20 @@ struct OmakaseConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+enum OmakaseSource {
+    Url(String),
+    MirrorList(OmakaseSourceMirrorlist),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct OmakaseSourceMirrorlist {
+    mirrorlist: String,
+    preferred: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct OmakaseMirror {
-    url: String,
+    source: OmakaseSource,
     distribution: String,
     components: Vec<String>,
     keys: Vec<String>,
@@ -628,14 +640,11 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
 }
 
 fn gen_omakase_config_string(status: &Status) -> Result<String> {
-    let mut config_file = std::fs::File::open(OMAKASE_CONFIG_FILE)?;
-    let mut buf = vec![];
-    config_file.read_to_end(&mut buf)?;
-    let mut omakase_config: OmakaseConfig = toml::from_slice(&buf)?;
+    let mut omakase_config = read_distro_file::<OmakaseConfig, _>(OMAKASE_CONFIG_FILE)?;
     let repo_list = omakase_config.repo;
     let mut new_repo_map = HashMap::new();
     fn format_url(url: &str) -> String {
-        if url.ends_with("/") {
+        if url.ends_with('/') {
             url.to_string()
         } else {
             format!("{}/", url)
@@ -646,7 +655,7 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
         new_repo_map.insert(
             name.to_owned(),
             OmakaseMirror {
-                url: format!("{}debs", url),
+                source: OmakaseSource::Url(format!("{}debs", url)),
                 distribution: status.branch.to_owned(),
                 components: status.component.to_owned(),
                 keys: vec!["aosc.gpg".to_string()],
@@ -667,7 +676,7 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
             new_repo_map.insert(
                 name.to_string(),
                 OmakaseMirror {
-                    url: format!("{}debs", url),
+                    source: OmakaseSource::Url(format!("{}debs", url)),
                     distribution: repo.distribution,
                     components: repo.components,
                     keys: repo.keys,
