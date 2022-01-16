@@ -27,14 +27,14 @@ use i18n::I18N_LOADER;
 
 lazy_static! {
     static ref REPO_DATA_DIRECTORY: PathBuf = get_repo_data_path();
-    static ref REPO_MIRROR_FILE: PathBuf = REPO_DATA_DIRECTORY.join("mirrors.yml");
-    static ref REPO_COMPONENT_FILE: PathBuf = REPO_DATA_DIRECTORY.join("comps.yml");
-    static ref REPO_BRANCH_FILE: PathBuf = REPO_DATA_DIRECTORY.join("branches.yml");
+    static ref REPO_MIRROR_FILE: PathBuf = REPO_DATA_DIRECTORY.join("mirrors.toml");
+    static ref REPO_COMPONENT_FILE: PathBuf = REPO_DATA_DIRECTORY.join("comps.toml");
+    static ref REPO_BRANCH_FILE: PathBuf = REPO_DATA_DIRECTORY.join("branches.toml");
 }
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
-const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
+const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.toml";
 const OMAKASE_CONFIG_FILE: &str = "/etc/omakase/config.toml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
@@ -61,10 +61,17 @@ struct BranchInfo {
     suites: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct MirrorInfo {
-    desc: String,
+    description: String,
     url: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct MirrorsData {
+    default: String,
+    #[serde(flatten)]
+    mirror: HashMap<String, MirrorInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -88,7 +95,6 @@ struct FrontendStatus {
 }
 
 type BranchesData = HashMap<String, BranchInfo>;
-type MirrorsData = IndexMap<String, MirrorInfo>;
 type ComponentData = HashMap<String, String>;
 type CustomMirrorData = HashMap<String, String>;
 
@@ -220,7 +226,8 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
 }
 
 fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
-    let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    let mirrors_data = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    let mirrors_indexmap = mirrors_data.mirror;
     let bar = ProgressBar::new_spinner();
     let mut mirrors_score_table = if is_parallel {
         bar.set_message(fl!("test-mirrors"));
@@ -282,9 +289,10 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
 
 fn get_available_mirror(status: &Status) -> Result<()> {
     let mut result_table = IndexMap::new();
-    let distro_mirror = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    let distro_mirror_data = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
+    let distro_mirror = distro_mirror_data.mirror;
     for (mirror_name, mirror_info) in distro_mirror {
-        result_table.insert(mirror_name, mirror_info.desc);
+        result_table.insert(mirror_name, mirror_info.description);
     }
     if let Ok(custom_mirror) = read_distro_file::<CustomMirrorData, _>(CUSTOM_MIRROR_FILE) {
         for (mirror_name, mirror_url) in custom_mirror {
@@ -348,6 +356,7 @@ fn add_mirror(entry: Vec<&str>, status: &mut Status) -> Result<()> {
 
 fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     if read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?
+        .mirror
         .get(mirror_name)
         .is_some()
     {
@@ -539,7 +548,7 @@ fn trans_to_new_status_config(file: Vec<u8>) -> Result<Status> {
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
-    Ok(serde_yaml::from_slice(&fs::read(file)?)?)
+    Ok(toml::from_slice(&fs::read(file)?)?)
 }
 
 fn apply_status(status: &Status) -> Result<()> {
@@ -707,8 +716,9 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
 }
 
 fn get_mirror_url(mirror_name: &str) -> Result<String> {
-    if let Some(mirror_info) =
-        read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?.get(mirror_name)
+    if let Some(mirror_info) = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?
+        .mirror
+        .get(mirror_name)
     {
         return Ok(mirror_info.url.to_owned());
     } else if let Some(mirror_url) =
