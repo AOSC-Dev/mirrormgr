@@ -643,19 +643,11 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
     let mut omakase_config = read_distro_file::<OmakaseConfig, _>(OMAKASE_CONFIG_FILE)?;
     let repo_list = omakase_config.repo;
     let mut new_repo_map = HashMap::new();
-    fn format_url(url: &str) -> String {
-        if url.ends_with('/') {
-            url.to_string()
-        } else {
-            format!("{}/", url)
-        }
-    }
     for (name, url) in &status.mirror {
-        let url = format_url(url);
         new_repo_map.insert(
             name.to_owned(),
             OmakaseMirror {
-                source: OmakaseSource::Url(format!("{}debs", url)),
+                source: OmakaseSource::Url(url.to_string()),
                 distribution: status.branch.to_owned(),
                 components: status.component.to_owned(),
                 keys: vec!["aosc.gpg".to_string()],
@@ -672,11 +664,10 @@ fn gen_omakase_config_string(status: &Status) -> Result<String> {
             continue;
         }
         if let Some((_, url)) = status.mirror.first() {
-            let url = format_url(url);
             new_repo_map.insert(
                 name.to_string(),
                 OmakaseMirror {
-                    source: OmakaseSource::Url(format!("{}debs", url)),
+                    source: OmakaseSource::Url(url.to_string()),
                     distribution: repo.distribution,
                     components: repo.components,
                     keys: repo.keys,
