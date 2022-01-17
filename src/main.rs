@@ -12,7 +12,6 @@ use sha1::Sha1;
 use std::{
     collections::HashMap,
     fs,
-    io::Read,
     path::{Path, PathBuf},
     process::Command,
     time::{Duration, Instant},
@@ -82,6 +81,7 @@ struct OmakaseConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 enum OmakaseSource {
     Url(String),
     MirrorList(OmakaseSourceMirrorlist),
