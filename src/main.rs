@@ -146,7 +146,7 @@ fn main() -> Result<()> {
         Some(("add-custom-mirror", args)) => {
             let custom_mirror_name = args.value_of("MIRROR_NAME").unwrap();
             let custom_mirror_url = args.value_of("MIRROR_URL").unwrap();
-            if !Path::new(CUSTOM_MIRROR_FILE).exists() {
+            if !Path::new(CUSTOM_MIRROR_FILE).is_file() && Path::new(OLD_CUSTOM_MIRROR_FILE).is_file() {
                 warn!("custom mirror config does not exists, try to trans old config!");
                 trans_to_new_custom_mirror_config()?;
             }
