@@ -34,7 +34,6 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.toml";
-const OMAKASE_CONFIG_FILE: &str = "/etc/omakase/config.toml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
@@ -71,39 +70,6 @@ struct MirrorsData {
     default: String,
     #[serde(flatten)]
     mirror: HashMap<String, MirrorInfo>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct OmakaseConfig {
-    #[serde(flatten)]
-    other: toml::Value,
-    repo: HashMap<String, OmakaseMirror>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-enum OmakaseSource {
-    Url(String),
-    MirrorList(OmakaseSourceMirrorlist),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct OmakaseSourceMirrorlist {
-    mirrorlist: String,
-    preferred: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct OmakaseMirror {
-    source: OmakaseSource,
-    distribution: String,
-    components: Vec<String>,
-    keys: Vec<String>,
-}
-
-struct FrontendStatus {
-    has_apt: bool,
-    has_oma: bool,
 }
 
 type BranchesData = HashMap<String, BranchInfo>;
@@ -569,7 +535,6 @@ fn apply_status(status: &Status) -> Result<()> {
         STATUS_FILE,
         format!("{}\n", serde_json::to_string(&status)?),
     )?;
-    let frontend_status = get_frontend_status();
     #[cfg(feature = "aosc")]
     {
         println!("{}", fl!("run-atm-refresh"));
@@ -578,47 +543,16 @@ fn apply_status(status: &Status) -> Result<()> {
             .spawn()?
             .wait_with_output()?;
     }
-    if frontend_status.has_apt {
-        let source_list_str = gen_sources_list_string(status)?;
-        println!("{}", fl!("write-sources"));
-        fs::write(APT_SOURCE_FILE, source_list_str)?;
-        println!("{}", fl!("run-apt"));
-        Command::new("apt-get")
-            .arg("update")
-            .spawn()?
-            .wait_with_output()?;
-    }
-    if frontend_status.has_oma {
-        let omakase_config_str = gen_omakase_config_string(status)?;
-        println!("{}", fl!("write-omakase-config"));
-        fs::write(OMAKASE_CONFIG_FILE, omakase_config_str)?;
-        println!("{}", fl!("run-oma"));
-        Command::new("oma")
-            .arg("refresh")
-            .spawn()?
-            .wait_with_output()?;
-    }
+    let source_list_str = gen_sources_list_string(status)?;
+    println!("{}", fl!("write-sources"));
+    fs::write(APT_SOURCE_FILE, source_list_str)?;
+    println!("{}", fl!("run-apt"));
+    Command::new("apt-get")
+        .arg("update")
+        .spawn()?
+        .wait_with_output()?;
 
     Ok(())
-}
-
-fn get_frontend_status() -> FrontendStatus {
-    let mut has_oma = false;
-    let mut has_apt = false;
-    let which_oma_output = Command::new("which").arg("oma").output();
-    let which_apt_output = Command::new("which").arg("apt").output();
-    if let Ok(which_oma_output) = which_oma_output {
-        if which_oma_output.status.success() {
-            has_oma = true;
-        }
-    }
-    if let Ok(which_apt_output) = which_apt_output {
-        if which_apt_output.status.success() {
-            has_apt = true;
-        }
-    }
-
-    FrontendStatus { has_apt, has_oma }
 }
 
 fn gen_sources_list_string(status: &Status) -> Result<String> {
@@ -637,47 +571,6 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     }
 
     Ok(result)
-}
-
-fn gen_omakase_config_string(status: &Status) -> Result<String> {
-    let mut omakase_config = read_distro_file::<OmakaseConfig, _>(OMAKASE_CONFIG_FILE)?;
-    let repo_list = omakase_config.repo;
-    let mut new_repo_map = HashMap::new();
-    for (name, url) in &status.mirror {
-        new_repo_map.insert(
-            name.to_owned(),
-            OmakaseMirror {
-                source: OmakaseSource::Url(url.to_string()),
-                distribution: status.branch.to_owned(),
-                components: status.component.to_owned(),
-                keys: vec!["aosc.gpg".to_string()],
-            },
-        );
-    }
-    for (name, repo) in repo_list {
-        let name = if let Some(name) = name.strip_prefix("repo.") {
-            name.to_owned()
-        } else {
-            name
-        };
-        if new_repo_map.get(&name).is_some() {
-            continue;
-        }
-        if let Some((_, url)) = status.mirror.first() {
-            new_repo_map.insert(
-                name.to_string(),
-                OmakaseMirror {
-                    source: OmakaseSource::Url(url.to_string()),
-                    distribution: repo.distribution,
-                    components: repo.components,
-                    keys: repo.keys,
-                },
-            );
-        }
-    }
-    omakase_config.repo = new_repo_map;
-
-    Ok(toml::to_string(&omakase_config)?)
 }
 
 async fn get_mirror_speed_score_parallel(mirror_name: &str, client: &Client) -> Result<f32> {
