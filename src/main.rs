@@ -8,13 +8,13 @@ use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sha1::Sha1;
+use sha2::{Sha256, Digest};
 use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
     process::Command,
-    time::{Duration, Instant},
+    time::{Duration, Instant}, io::Write,
 };
 use tokio::runtime::Builder;
 use url::Url;
@@ -92,7 +92,7 @@ fn main() -> Result<()> {
     let mut status = read_status()?;
 
     match app.subcommand() {
-        ("status", _) => {
+        Some(("status", _)) => {
             let mirror_list = status
                 .mirror
                 .into_iter()
@@ -102,22 +102,22 @@ fn main() -> Result<()> {
             println!("{}", fl!("component", comp = status.component.join(", ")));
             println!("{}", fl!("mirror", mirror = mirror_list.join(", ")));
         }
-        ("set-mirror", Some(args)) => {
+        Some(("set-mirror", args)) => {
             set_mirror(args.value_of("MIRROR").unwrap(), &mut status)?;
         }
-        ("add-mirror", Some(args)) => {
+        Some(("add-mirror", args)) => {
             add_mirror(args.values_of("MIRROR").unwrap().collect(), &mut status)?;
         }
-        ("remove-mirror", Some(args)) => {
+        Some(("remove-mirror", args)) => {
             remove_mirror(args, &mut status)?;
         }
-        ("add-component", Some(args)) => {
+        Some(("add-component", args)) => {
             add_component(args, &mut status)?;
         }
-        ("remove-component", Some(args)) => {
+        Some(("remove-component", args)) => {
             remove_component(args.values_of("COMPONENT").unwrap().collect(), status)?;
         }
-        ("set-branch", Some(args)) => {
+        Some(("set-branch", args)) => {
             let new_branch = args.value_of("BRANCH").unwrap();
             if read_distro_file::<BranchesData, _>(&*REPO_BRANCH_FILE)?
                 .get(new_branch)
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
             println!("{}", fl!("set-branch", branch = new_branch));
             apply_status(&status)?;
         }
-        ("speedtest", Some(args)) => {
+        Some(("speedtest", args)) => {
             let mirrors_score_table = get_mirror_score_table(args.is_present("parallel"))?;
             println!(" {:<20}Speed", "Mirror");
             println!(" {:<20}---", "---");
@@ -138,10 +138,10 @@ fn main() -> Result<()> {
                 println!(" {:<20}{}", mirror_name, score);
             }
         }
-        ("set-fastest-mirror-as-default", _) => {
+        Some(("set-fastest-mirror-as-default", _)) => {
             set_fastest_mirror_as_default(status)?;
         }
-        ("add-custom-mirror", Some(args)) => {
+        Some(("add-custom-mirror", args)) => {
             let custom_mirror_name = args.value_of("MIRROR_NAME").unwrap();
             let custom_mirror_url = args.value_of("MIRROR_URL").unwrap();
             add_custom_mirror(custom_mirror_name, custom_mirror_url)?;
@@ -151,13 +151,13 @@ fn main() -> Result<()> {
                 add_mirror(vec![custom_mirror_name], &mut status)?;
             }
         }
-        ("remove-custom-mirror", Some(args)) => {
+        Some(("remove-custom-mirror", args)) => {
             let custom_mirror_args = args.values_of("MIRROR").unwrap();
             for entry in custom_mirror_args {
                 remove_custom_mirror(entry)?;
             }
         }
-        ("reset-mirror", _) => {
+        Some(("reset-mirror", _)) => {
             #[cfg(feature = "aosc")]
             {
                 status = Status::default();
@@ -168,7 +168,7 @@ fn main() -> Result<()> {
                 unreachable!();
             }
         }
-        ("list-mirrors", _) => {
+        Some(("list-mirrors", _)) => {
             get_available_mirror(&status)?;
         }
         _ => {
@@ -582,12 +582,12 @@ async fn get_mirror_speed_score_parallel(mirror_name: &str, client: &Client) -> 
         .send()
         .await?
         .bytes()
-        .await;
-    let result_time = timer.elapsed().as_secs_f32();
-    if let Ok(file) = file {
-        if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
-            return Ok(result_time);
-        }
+        .await?;
+    let mut hasher = Sha256::new();
+    hasher.write_all(&file)?;
+    if hex::encode(hasher.finalize()) == SPEEDTEST_FILE_CHECKSUM {
+        let result_time = timer.elapsed().as_secs_f32();
+        return Ok(result_time);
     }
 
     Err(anyhow!(fl!("mirror-error", mirror = mirror_name)))
@@ -600,8 +600,10 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
         .build()?;
     let timer = Instant::now();
     let file = client.get(download_url).send()?.bytes()?;
-    let result_time = timer.elapsed().as_secs_f32();
-    if Sha1::from(file).digest().to_string() == SPEEDTEST_FILE_CHECKSUM {
+    let mut hasher = Sha256::new();
+    hasher.write_all(&file)?;
+    if hex::encode(hasher.finalize()) == SPEEDTEST_FILE_CHECKSUM {
+        let result_time = timer.elapsed().as_secs_f32();
         return Ok(result_time);
     }
 

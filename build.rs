@@ -1,4 +1,4 @@
-use clap::Shell;
+use clap_complete::{generate_to, Shell};
 use os_release::OsRelease;
 use std::env;
 include!("src/cli.rs");
@@ -8,7 +8,8 @@ const GENERATED_COMPLETIONS: &[Shell] = &[Shell::Bash, Shell::Zsh, Shell::Fish];
 fn generate_completions() {
     let mut app = build_cli();
     for shell in GENERATED_COMPLETIONS {
-        app.gen_completions("apt-gen-list", *shell, "completions");
+        generate_to(*shell, &mut app, "apt-gen-list", "completions")
+            .expect("Failed to generate shell completions");
     }
 }
 
