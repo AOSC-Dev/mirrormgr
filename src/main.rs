@@ -8,14 +8,13 @@ use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha2::{Sha256, Digest};
 use std::{
     collections::HashMap,
     fs,
-    io::{Read, Write},
     path::{Path, PathBuf},
     process::Command,
-    time::{Duration, Instant},
+    time::{Duration, Instant}, io::Write,
 };
 use tokio::runtime::Builder;
 use url::Url;
@@ -35,7 +34,6 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.toml";
-const OLD_CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
@@ -146,10 +144,6 @@ fn main() -> Result<()> {
         Some(("add-custom-mirror", args)) => {
             let custom_mirror_name = args.value_of("MIRROR_NAME").unwrap();
             let custom_mirror_url = args.value_of("MIRROR_URL").unwrap();
-            if !Path::new(CUSTOM_MIRROR_FILE).is_file() && Path::new(OLD_CUSTOM_MIRROR_FILE).is_file() {
-                warn!("custom mirror config does not exists, try to trans old config!");
-                trans_to_new_custom_mirror_config()?;
-            }
             add_custom_mirror(custom_mirror_name, custom_mirror_url)?;
             if args.is_present("also-set-mirror") {
                 set_mirror(custom_mirror_name, &mut status)?;
@@ -529,17 +523,6 @@ fn trans_to_new_status_config(file: Vec<u8>) -> Result<Status> {
         mirror: new_mirror,
         component: status.component,
     })
-}
-
-fn trans_to_new_custom_mirror_config() -> Result<CustomMirrorData> {
-    let mut custom_mirror_data = std::fs::File::open(OLD_CUSTOM_MIRROR_FILE)?;
-    let mut buf = Vec::new();
-    custom_mirror_data.read_to_end(&mut buf)?;
-    let custom_mirror_data: CustomMirrorData = serde_yaml::from_slice(&buf)?;
-    let custom_mirror_data_str = toml::to_string(&custom_mirror_data)?;
-    fs::write(CUSTOM_MIRROR_FILE, custom_mirror_data_str)?;
-
-    Ok(custom_mirror_data)
 }
 
 fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Result<T> {
