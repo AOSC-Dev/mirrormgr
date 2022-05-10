@@ -1,16 +1,16 @@
-use clap::{App, AppSettings, Arg};
+use clap::{Command, Arg};
 
 /// Build the CLI instance
-pub fn build_cli() -> App<'static> {
-    App::new("apt-gen-list-rs")
+pub fn build_cli() -> Command<'static> {
+    Command::new("apt-gen-list-rs")
         .version(env!("CARGO_PKG_VERSION"))
         .author("AOSC-Dev")
         .about(
             "Utility for generating APT sources.list from available repository configurations."
         )
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .subcommand(
-            App::new("set-branch")
+            Command::new("set-branch")
                 .about("Set APT repository branch (e.g., stable)")
                 .arg(
                     Arg::new("BRANCH")
@@ -21,7 +21,7 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("set-mirror")
+            Command::new("set-mirror")
                 .about("Set APT repository mirror")
                 .arg(
                     Arg::new("MIRROR")
@@ -32,7 +32,7 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("add-mirror")
+            Command::new("add-mirror")
                 .about("Add additional APT repository mirror")
                 .arg(
                     Arg::new("MIRROR")
@@ -43,7 +43,7 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("remove-mirror")
+            Command::new("remove-mirror")
                 .about("Remove APT repository mirror")
                 .arg(
                     Arg::new("MIRROR")
@@ -54,11 +54,11 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("status")
+            Command::new("status")
                 .about("Show apt-gen-list status")
         )
         .subcommand(
-            App::new("add-component")
+            Command::new("add-component")
                 .about("Set APT repository component")
                 .arg(
                     Arg::new("COMPONENT")
@@ -69,7 +69,7 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("remove-component")
+            Command::new("remove-component")
                 .about("Remove APT repository component")
                 .arg(
                     Arg::new("COMPONENT")
@@ -80,7 +80,7 @@ pub fn build_cli() -> App<'static> {
                 )
         )
         .subcommand(
-            App::new("add-custom-mirror")
+            Command::new("add-custom-mirror")
                 .about("Add custom repository mirror")
                 .arg(
                     Arg::new("MIRROR_NAME")
@@ -113,7 +113,7 @@ pub fn build_cli() -> App<'static> {
                 )
         )
         .subcommand(
-            App::new("remove-custom-mirror")
+            Command::new("remove-custom-mirror")
                 .about("Remove custom repository mirror")
                 .arg(
                     Arg::new("MIRROR")
@@ -124,7 +124,7 @@ pub fn build_cli() -> App<'static> {
                 ),
         )
         .subcommand(
-            App::new("speedtest")
+            Command::new("speedtest")
                 .about("Run speed-test on available mirrors")
                 .arg(
                     Arg::new("parallel")
@@ -134,16 +134,16 @@ pub fn build_cli() -> App<'static> {
                 )
         )
         .subcommand(
-            App::new("list-mirrors")
+            Command::new("list-mirrors")
                 .about("Show available mirror list")
         )
         .subcommand(
-            App::new("set-fastest-mirror-as-default")
+            Command::new("set-fastest-mirror-as-default")
                 .about("Set fastest mirror as default")
         )
         .subcommands({
             if cfg!(feature = "aosc") {
-                vec![App::new("reset-mirror").about("Reset mirror to default")]
+                vec![Command::new("reset-mirror").about("Reset mirror to default")]
             } else {
                 vec![]
             }
