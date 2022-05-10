@@ -8,13 +8,14 @@ use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     fs,
+    io::Write,
     path::{Path, PathBuf},
     process::Command,
-    time::{Duration, Instant}, io::Write,
+    time::{Duration, Instant},
 };
 use tokio::runtime::Builder;
 use url::Url;
@@ -300,7 +301,10 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
         if status.mirror.get(i.to_owned()).is_some() {
             status.mirror.remove(i.to_owned());
         } else {
-            warn!("{}", fl!("mirror-not-found", mirror = i.to_string()));
+            return Err(anyhow!(
+                "{}",
+                fl!("mirror-not-found", mirror = i.to_string())
+            ));
         }
     }
     println!("{}", fl!("remove-mirror", mirror = entry.join(", ")));
