@@ -334,13 +334,10 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
     let url = Url::parse(mirror_url).map_err(|_| anyhow!(fl!("custom-mirror-not-url")))?;
     #[cfg(feature = "aosc")]
     {
-        if vec![Some(&"debs"), Some(&"debs-retro")].contains(
-            &url.path_segments()
-                .map(|c| c.collect::<Vec<_>>())
-                .ok_or_else(|| anyhow!(fl!("custom-mirror-not-url")))?
-                .last(),
-        ) {
-            return Err(anyhow!(fl!("debs-path-in-url")));
+        for i in &["debs", "debs/", "debs-retro", "debs-retro/"] {
+            if mirror_url.ends_with(i) {
+                return Err(anyhow!(fl!("debs-path-in-url")));
+            }
         }
         println!("{}", fl!("trying-get-mirror"));
         let get_mirror = reqwest::blocking::Client::builder()
