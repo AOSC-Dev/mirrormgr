@@ -39,4 +39,5 @@ os-release = "0.1"
 
 [features]
 aosc = []
+retro = []
 default = ["aosc"]

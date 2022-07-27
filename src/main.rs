@@ -527,7 +527,7 @@ fn apply_status(status: &Status) -> Result<()> {
         STATUS_FILE,
         format!("{}\n", serde_json::to_string(&status)?),
     )?;
-    #[cfg(feature = "aosc")]
+    #[cfg(all(feature = "aosc", not(feature = "retro")))]
     {
         println!("{}", fl!("run-atm-refresh"));
         Command::new("atm")
