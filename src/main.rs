@@ -35,7 +35,7 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
-const SPEEDTEST_FILE_CHECKSUM: &str = "399c1475c74b6534fe1c272035fce276bf587989";
+const SPEEDTEST_FILE_CHECKSUM: &str = "98900564fb4d9c7d3b63f44686c5b8a120af94a51fc6ca595e1406d5d8cc0416";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
 
@@ -594,7 +594,8 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     let file = client.get(download_url).send()?.bytes()?;
     let mut hasher = Sha256::new();
     hasher.write_all(&file)?;
-    if hex::encode(hasher.finalize()) == SPEEDTEST_FILE_CHECKSUM {
+    let c = hex::encode(hasher.finalize());
+    if c == SPEEDTEST_FILE_CHECKSUM {
         let result_time = timer.elapsed().as_secs_f32();
         return Ok(result_time);
     }
