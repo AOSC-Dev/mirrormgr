@@ -216,7 +216,7 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
                 .into_iter()
                 .map(|x| get_mirror_speed_score_parallel(x, &client))
                 .collect::<Vec<_>>();
-            bar.enable_steady_tick(50);
+            bar.enable_steady_tick(Duration::from_millis(50));
             let results = future::join_all(task).await;
             let mut result = Vec::new();
             for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
@@ -235,7 +235,7 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
                 count = index,
                 all = mirrors_indexmap.len()
             ));
-            bar.enable_steady_tick(50);
+            bar.enable_steady_tick(Duration::from_millis(50));
             if let Ok(time) = get_mirror_speed_score(mirror_name) {
                 result.push((mirror_name.to_owned(), SPEEDTEST_FILE_SIZE_KIB / time));
             }

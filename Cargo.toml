@@ -16,7 +16,7 @@ url = "2.2"
 reqwest = { version = "0.11", features = ["blocking"]}
 lazy_static = "1.4"
 log = "0.4"
-indicatif = "0.16"
+indicatif = "0.17"
 sha2 = "0.10"
 hex = "0.4"
 os-release = "0.1"
@@ -24,7 +24,7 @@ indexmap = {version = "1.6", features = ["serde-1"]}
 owo-colors = "3.0"
 futures = "0.3"
 tokio = {version = "^1", features = ["rt-multi-thread", "rt", "time"]}
-nix = "0.24"
+nix = "0.25"
 # i18n
 i18n-embed = { version = "0.13", features = ["fluent-system", "desktop-requester"]}
 i18n-embed-fl = "0.6"
