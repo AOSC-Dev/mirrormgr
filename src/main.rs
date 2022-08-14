@@ -35,7 +35,8 @@ lazy_static! {
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
-const SPEEDTEST_FILE_CHECKSUM: &str = "98900564fb4d9c7d3b63f44686c5b8a120af94a51fc6ca595e1406d5d8cc0416";
+const SPEEDTEST_FILE_CHECKSUM: &str =
+    "98900564fb4d9c7d3b63f44686c5b8a120af94a51fc6ca595e1406d5d8cc0416";
 const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
 
@@ -551,7 +552,13 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = format!("{}\n", fl!("generated"));
     let directory_name = get_directory_name();
     for (_, mirror_url) in &status.mirror {
-        let debs_url = Url::parse(mirror_url)?.join(directory_name)?;
+        let mirror_url = if mirror_url.ends_with("/") {
+            mirror_url.to_owned()
+        } else {
+            format!("{}/", mirror_url)
+        };
+
+        let debs_url = Url::parse(&mirror_url)?.join(directory_name)?;
         for branch in get_branch_suites(&status.branch)? {
             result.push_str(&format!(
                 "deb {} {} {}\n",
