@@ -129,7 +129,7 @@ fn main() -> Result<()> {
             } else {
                 return Err(anyhow!(fl!("branch-not-found")));
             }
-            println!("{}", fl!("set-branch", branch = new_branch.to_string()));
+            println!("{}", fl!("set-branch", branch = new_branch));
             apply_status(&status)?;
         }
         Some(("speedtest", args)) => {
