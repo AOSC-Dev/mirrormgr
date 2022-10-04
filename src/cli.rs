@@ -1,7 +1,7 @@
 use clap::{Command, Arg};
 
 /// Build the CLI instance
-pub fn build_cli() -> Command<'static> {
+pub fn build_cli() -> Command {
     Command::new("apt-gen-list-rs")
         .version(env!("CARGO_PKG_VERSION"))
         .author("AOSC-Dev")
@@ -15,9 +15,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("BRANCH")
                         .help("Input branch name here")
-                        .max_values(1)
+                        .num_args(0..=1)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -26,9 +26,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("MIRROR")
                         .help("source.list mirror")
-                        .max_values(1)
+                        .num_args(0..=1)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set),
                 ),
         )
         .subcommand(
@@ -37,9 +37,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("MIRROR")
                         .help("source.list mirror")
-                        .min_values(1)
+                        .num_args(1..)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 ),
         )
         .subcommand(
@@ -48,9 +48,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("MIRROR")
                         .help("remove source.list mirror")
-                        .min_values(1)
+                        .num_args(1..)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 ),
         )
         .subcommand(
@@ -63,9 +63,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("COMPONENT")
                         .help("Input component name")
-                        .min_values(1)
+                        .num_args(1..)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 ),
         )
         .subcommand(
@@ -74,9 +74,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("COMPONENT")
                         .help("Input component name to be removed")
-                        .min_values(1)
+                        .num_args(1..)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 )
         )
         .subcommand(
@@ -86,13 +86,13 @@ pub fn build_cli() -> Command<'static> {
                     Arg::new("MIRROR_NAME")
                         .help("custom repository mirror name")
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 )
                 .arg(
                     Arg::new("MIRROR_URL")
                     .help("custom repository mirror url")
                     .required(true)
-                    .takes_value(true),
+                    .action(clap::ArgAction::Set)
                 )
                 .arg(
                     Arg::new("also-set-mirror")
@@ -101,6 +101,7 @@ pub fn build_cli() -> Command<'static> {
                     .short('s')
                     .requires("MIRROR_NAME")
                     .requires("MIRROR_URL")
+                    .action(clap::ArgAction::SetTrue)
                 )
                 .arg(
                     Arg::new("also-add-mirror")
@@ -110,6 +111,7 @@ pub fn build_cli() -> Command<'static> {
                     .requires("MIRROR_NAME")
                     .requires("MIRROR_URL")
                     .conflicts_with("also-set-mirror")
+                    .action(clap::ArgAction::SetTrue)
                 )
         )
         .subcommand(
@@ -118,9 +120,9 @@ pub fn build_cli() -> Command<'static> {
                 .arg(
                     Arg::new("MIRROR")
                         .help("Input custom repository mirror name to remove from the list of custom mirrors")
-                        .min_values(1)
+                        .num_args(1..)
                         .required(true)
-                        .takes_value(true),
+                        .action(clap::ArgAction::Set)
                 ),
         )
         .subcommand(
@@ -131,6 +133,7 @@ pub fn build_cli() -> Command<'static> {
                     .help("Test mirror performance concurrently, test will take a shorter amount of time, but results will only serve as a rough estimate and could vary between runs")
                     .long("parallel")
                     .short('p')
+                    .action(clap::ArgAction::SetTrue)
                 )
         )
         .subcommand(

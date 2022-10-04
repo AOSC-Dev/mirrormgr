@@ -99,10 +99,13 @@ fn main() -> Result<()> {
             println!("{}", fl!("mirror", mirror = mirror_list.join(", ")));
         }
         Some(("set-mirror", args)) => {
-            set_mirror(args.value_of("MIRROR").unwrap(), &mut status)?;
+            set_mirror(args.get_one::<String>("MIRROR").unwrap(), &mut status)?;
         }
         Some(("add-mirror", args)) => {
-            add_mirror(args.values_of("MIRROR").unwrap().collect(), &mut status)?;
+            add_mirror(
+                many(args, "MIRROR"),
+                &mut status,
+            )?;
         }
         Some(("remove-mirror", args)) => {
             remove_mirror(args, &mut status)?;
@@ -111,10 +114,13 @@ fn main() -> Result<()> {
             add_component(args, &mut status)?;
         }
         Some(("remove-component", args)) => {
-            remove_component(args.values_of("COMPONENT").unwrap().collect(), status)?;
+            remove_component(
+                many(args, "COMPONENT"),
+                status,
+            )?;
         }
         Some(("set-branch", args)) => {
-            let new_branch = args.value_of("BRANCH").unwrap();
+            let new_branch = args.get_one::<String>("BRANCH").unwrap();
             if read_distro_file::<BranchesData, _>(&*REPO_BRANCH_FILE)?
                 .get(new_branch)
                 .is_some()
@@ -123,11 +129,11 @@ fn main() -> Result<()> {
             } else {
                 return Err(anyhow!(fl!("branch-not-found")));
             }
-            println!("{}", fl!("set-branch", branch = new_branch));
+            println!("{}", fl!("set-branch", branch = new_branch.to_string()));
             apply_status(&status)?;
         }
         Some(("speedtest", args)) => {
-            let mirrors_score_table = get_mirror_score_table(args.is_present("parallel"))?;
+            let mirrors_score_table = get_mirror_score_table(args.get_flag("parallel"))?;
             println!(" {:<20}Speed", "Mirror");
             println!(" {:<20}---", "---");
             for (mirror_name, score) in mirrors_score_table {
@@ -138,17 +144,17 @@ fn main() -> Result<()> {
             set_fastest_mirror_as_default(status)?;
         }
         Some(("add-custom-mirror", args)) => {
-            let custom_mirror_name = args.value_of("MIRROR_NAME").unwrap();
-            let custom_mirror_url = args.value_of("MIRROR_URL").unwrap();
+            let custom_mirror_name = args.get_one::<String>("MIRROR_NAME").unwrap();
+            let custom_mirror_url = args.get_one::<String>("MIRROR_URL").unwrap();
             add_custom_mirror(custom_mirror_name, custom_mirror_url)?;
-            if args.is_present("also-set-mirror") {
+            if args.get_flag("also-set-mirror") {
                 set_mirror(custom_mirror_name, &mut status)?;
-            } else if args.is_present("also-add-mirror") {
-                add_mirror(vec![custom_mirror_name], &mut status)?;
+            } else if args.get_flag("also-add-mirror") {
+                add_mirror(vec![custom_mirror_name.to_string()], &mut status)?;
             }
         }
         Some(("remove-custom-mirror", args)) => {
-            let custom_mirror_args = args.values_of("MIRROR").unwrap();
+            let custom_mirror_args = args.get_many::<String>("MIRROR").unwrap();
             for entry in custom_mirror_args {
                 remove_custom_mirror(entry)?;
             }
@@ -297,10 +303,12 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     if status.mirror.len() == 1 {
         return Err(anyhow!(fl!("no-delete-only-mirror")));
     }
-    let entry: Vec<&str> = args.values_of("MIRROR").unwrap().collect();
+
+    let entry = many(args, "MIRROR");
+
     for i in &entry {
-        if status.mirror.get(i.to_owned()).is_some() {
-            status.mirror.remove(i.to_owned());
+        if status.mirror.get(i).is_some() {
+            status.mirror.remove(i);
         } else {
             return Err(anyhow!(
                 "{}",
@@ -314,11 +322,22 @@ fn remove_mirror(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
     Ok(())
 }
 
-fn add_mirror(entry: Vec<&str>, status: &mut Status) -> Result<()> {
+fn many(args: &clap::ArgMatches, name: &str) -> Vec<String> {
+    let entry = args
+        .get_many::<String>(name)
+        .unwrap()
+        .into_iter()
+        .map(|x| x.to_owned())
+        .collect::<Vec<_>>();
+        
+    entry
+}
+
+fn add_mirror(entry: Vec<String>, status: &mut Status) -> Result<()> {
     println!("{}", fl!("add-mirror", mirror = entry.join(", ")));
     for i in entry {
-        let mirror_url = get_mirror_url(i)?;
-        if status.mirror.get(i).is_some() {
+        let mirror_url = get_mirror_url(&i)?;
+        if status.mirror.get(&i).is_some() {
             warn!("{}", fl!("mirror-already-enabled", mirror = i.to_string()));
         } else {
             status.mirror.insert(i.to_string(), mirror_url);
@@ -419,8 +438,8 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn remove_component(entry: Vec<&str>, mut status: Status) -> Result<()> {
-    if !entry.contains(&"main") {
+fn remove_component(entry: Vec<String>, mut status: Status) -> Result<()> {
+    if !entry.contains(&"main".to_string()) {
         for i in &entry {
             if let Some(index) = status.component.iter().position(|v| v == i) {
                 status.component.remove(index);
@@ -438,7 +457,7 @@ fn remove_component(entry: Vec<&str>, mut status: Status) -> Result<()> {
 }
 
 fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
-    let entries: Vec<&str> = args.values_of("COMPONENT").unwrap().collect();
+    let entries = many(args, "COMPONENT");
     for entry in entries.iter() {
         let entry_str = entry.to_string();
         if status.component.contains(&entry_str) {
