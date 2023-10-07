@@ -203,7 +203,8 @@ fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
 
 fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
     let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
-    let bar = ProgressBar::new(mirrors_indexmap.len() as u64);
+    let bar = Arc::new(ProgressBar::new(mirrors_indexmap.len() as u64));
+    let barc = bar.clone();
     bar.set_style(
         ProgressStyle::with_template("[{wide_bar:.cyan/blue}] ({pos}/{len})")
             .unwrap()
@@ -223,13 +224,13 @@ fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
             for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
                 if let Ok(time) = results[index] {
                     let score = SPEEDTEST_FILE_SIZE_KIB / time;
-                    bar.println(format!(
+                    barc.println(format!(
                         "{mirror_name}: {}",
                         format_speed(SPEEDTEST_FILE_SIZE_KIB / time)
                     ));
                     all_score.push((mirror_name.to_string(), score));
                 }
-                bar.inc(1);
+                barc.inc(1);
             }
 
             all_score.sort_by(|(_, x), (_, y)| y.partial_cmp(x).unwrap());
@@ -247,11 +248,15 @@ fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
             match get_mirror_speed_score(mirror_name) {
                 Ok(time) => {
                     let score = SPEEDTEST_FILE_SIZE_KIB / time;
-                    bar.println(format!("{mirror_name}: {}", format_speed(score)).green().to_string());
+                    bar.println(format!("{mirror_name}: {}", format_speed(score)));
                     all_score.push((mirror_name.to_string(), score));
                 }
                 Err(e) => {
-                    bar.println(format!("{mirror_name}: {}", e.chain().last().unwrap()).red().to_string());
+                    bar.println(
+                        format!("{mirror_name}: {}", e.chain().last().unwrap())
+                            .red()
+                            .to_string(),
+                    );
                 }
             }
             bar.inc(1);
@@ -268,6 +273,17 @@ fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
     let (a, s) = &mirrors_score[0];
     let res = format_speed(*s);
     let res = (a.to_string(), res);
+
+    bar.finish_with_message("DONE!");
+
+    info!(
+        "{}",
+        fl!(
+            "fastest-mirror",
+            mirror = res.0.clone(),
+            speed = res.1.clone()
+        )
+    );
 
     Ok(res)
 }
