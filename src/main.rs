@@ -2,11 +2,11 @@ use anyhow::{anyhow, Result};
 use dashmap::DashMap;
 use futures::future;
 use indexmap::{indexmap, IndexMap};
-use indicatif::{MultiProgress, ProgressBar};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
-use oma_console::{info, warn};
 use oma_console::pb::{oma_spinner, oma_style_pb};
 use oma_console::writer::Writer;
+use oma_console::{info, warn};
 use oma_refresh::db::{OmaRefresh, RefreshEvent};
 use oma_refresh::DownloadEvent;
 use os_release::OsRelease;
@@ -43,8 +43,8 @@ const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRROR_FILE: &str = "/etc/apt-gen-list/custom_mirror.yml";
 const SPEEDTEST_FILE_CHECKSUM: &str =
-    "98900564fb4d9c7d3b63f44686c5b8a120af94a51fc6ca595e1406d5d8cc0416";
-const DOWNLOAD_PATH: &str = "misc/u-boot-sunxi-with-spl.bin";
+    "30e14955ebf1352266dc2ff8067e68104607e750abb9d3b36582b8af909fcb58";
+const DOWNLOAD_PATH: &str = ".repotest";
 const SPEEDTEST_FILE_SIZE_KIB: f32 = 389.106_45;
 
 #[derive(Deserialize, Serialize)]
@@ -134,12 +134,7 @@ fn main() -> Result<()> {
             apply_status(&status)?;
         }
         Some(("speedtest", args)) => {
-            let mirrors_score_table = get_mirror_score_table(args.get_flag("parallel"))?;
-            println!(" {:<20}Speed", "Mirror");
-            println!(" {:<20}---", "---");
-            for (mirror_name, score) in mirrors_score_table {
-                println!(" {:<20}{}", mirror_name, score);
-            }
+            get_mirror_score(args.get_flag("parallel"))?;
         }
         Some(("set-fastest-mirror-as-default", _)) => {
             set_fastest_mirror_as_default(status)?;
@@ -192,24 +187,29 @@ fn get_repo_data_path() -> PathBuf {
 }
 
 fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
-    let mirrors_score_table = get_mirror_score_table(false)?;
+    let mirrors_score_table = get_mirror_score(false)?;
     info!(
         "{}",
         fl!(
             "set-fastest-mirror",
-            mirror = mirrors_score_table[0].0.clone(),
-            speed = mirrors_score_table[0].1.clone()
+            mirror = mirrors_score_table.0.clone(),
+            speed = mirrors_score_table.1.clone()
         )
     );
-    set_mirror(mirrors_score_table[0].0.as_str(), &mut status)?;
+    set_mirror(mirrors_score_table.0.as_str(), &mut status)?;
 
     Ok(())
 }
 
-fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
+fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
     let mirrors_indexmap = read_distro_file::<MirrorsData, _>(&*REPO_MIRROR_FILE)?;
-    let bar = ProgressBar::new_spinner();
-    let mut mirrors_score_table = if is_parallel {
+    let bar = ProgressBar::new(mirrors_indexmap.len() as u64);
+    bar.set_style(
+        ProgressStyle::with_template("[{wide_bar:.cyan/blue}] ({pos}/{len})")
+            .unwrap()
+            .progress_chars("=>-"),
+    );
+    let mirrors_score = if is_parallel {
         bar.set_message(fl!("test-mirrors"));
         let runtime = async_runtime();
         let client = reqwest::Client::new();
@@ -217,50 +217,70 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
             let task = mirrors_indexmap
                 .keys()
                 .into_iter()
-                .map(|x| get_mirror_speed_score_parallel(x, &client))
-                .collect::<Vec<_>>();
-            bar.enable_steady_tick(Duration::from_millis(50));
+                .map(|x| get_mirror_speed_score_parallel(x, &client));
             let results = future::join_all(task).await;
-            let mut result = Vec::new();
+            let mut all_score = Vec::new();
             for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
                 if let Ok(time) = results[index] {
-                    result.push((mirror_name.to_owned(), SPEEDTEST_FILE_SIZE_KIB / time));
+                    let score = SPEEDTEST_FILE_SIZE_KIB / time;
+                    bar.println(format!(
+                        "{mirror_name}: {}",
+                        format_speed(SPEEDTEST_FILE_SIZE_KIB / time)
+                    ));
+                    all_score.push((mirror_name.to_string(), score));
                 }
+                bar.inc(1);
             }
 
-            result
+            all_score.sort_by(|(_, x), (_, y)| y.partial_cmp(x).unwrap());
+
+            all_score
         })
     } else {
-        let mut result = Vec::new();
+        let mut all_score = Vec::new();
         for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
             bar.set_message(fl!(
                 "test-mirrors-sync",
                 count = index,
                 all = mirrors_indexmap.len()
             ));
-            bar.enable_steady_tick(Duration::from_millis(50));
-            if let Ok(time) = get_mirror_speed_score(mirror_name) {
-                result.push((mirror_name.to_owned(), SPEEDTEST_FILE_SIZE_KIB / time));
+            match get_mirror_speed_score(mirror_name) {
+                Ok(time) => {
+                    let score = SPEEDTEST_FILE_SIZE_KIB / time;
+                    bar.println(format!("{mirror_name}: {}", format_speed(score)).green().to_string());
+                    all_score.push((mirror_name.to_string(), score));
+                }
+                Err(e) => {
+                    bar.println(format!("{mirror_name}: {}", e.chain().last().unwrap()).red().to_string());
+                }
             }
+            bar.inc(1);
         }
 
-        result
+        all_score.sort_by(|(_, x), (_, y)| y.partial_cmp(x).unwrap());
+        all_score
     };
-    mirrors_score_table.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
-    if mirrors_score_table.is_empty() {
+
+    if mirrors_score.is_empty() {
         return Err(anyhow!(fl!("mirror-test-failed")));
     }
-    let mut result = Vec::new();
-    for (mirror_name, mut score) in mirrors_score_table {
-        let mut unit = "KiB/s";
-        if score > 1000.0 {
-            score /= 1024.0;
-            unit = "MiB/s";
-        }
-        result.push((mirror_name.to_owned(), format!("{:.2}{}", score, unit)));
+
+    let (a, s) = &mirrors_score[0];
+    let res = format_speed(*s);
+    let res = (a.to_string(), res);
+
+    Ok(res)
+}
+
+fn format_speed(score: f32) -> String {
+    let mut score = score;
+    let mut unit = "KiB/s";
+    if score > 1000.0 {
+        score /= 1024.0;
+        unit = "MiB/s";
     }
 
-    Ok(result)
+    format!("{:.2}{}", score, unit)
 }
 
 fn async_runtime() -> Runtime {
@@ -432,7 +452,7 @@ fn remove_custom_mirror(mirror_name: &str) -> Result<()> {
     } else {
         custom_mirror.remove(mirror_name);
     }
-    println!(
+    info!(
         "{}",
         fl!(
             "remove-custom-mirror",
@@ -557,7 +577,7 @@ fn apply_status(status: &Status) -> Result<()> {
     let source_list_str = gen_sources_list_string(status)?;
     info!("{}", fl!("write-sources"));
     fs::write(APT_SOURCE_FILE, source_list_str)?;
-    info!("{}", fl!("run-apt"));
+    info!("{}", fl!("run-refresh"));
 
     let mb = Arc::new(MultiProgress::new());
     let pb_map: DashMap<usize, ProgressBar> = DashMap::new();
