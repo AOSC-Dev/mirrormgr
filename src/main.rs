@@ -4,7 +4,7 @@ use futures::future;
 use indexmap::{indexmap, IndexMap};
 use indicatif::{MultiProgress, ProgressBar};
 use lazy_static::lazy_static;
-use log::warn;
+use oma_console::{info, warn};
 use oma_console::pb::{oma_spinner, oma_style_pb};
 use oma_console::writer::Writer;
 use oma_refresh::db::{OmaRefresh, RefreshEvent};
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
             } else {
                 return Err(anyhow!(fl!("branch-not-found")));
             }
-            println!("{}", fl!("set-branch", branch = new_branch.to_string()));
+            info!("{}", fl!("set-branch", branch = new_branch.to_string()));
             apply_status(&status)?;
         }
         Some(("speedtest", args)) => {
@@ -193,7 +193,7 @@ fn get_repo_data_path() -> PathBuf {
 
 fn set_fastest_mirror_as_default(mut status: Status) -> Result<()> {
     let mirrors_score_table = get_mirror_score_table(false)?;
-    println!(
+    info!(
         "{}",
         fl!(
             "set-fastest-mirror",
@@ -300,7 +300,7 @@ fn get_available_mirror(status: &Status) -> Result<()> {
 
 fn set_mirror(new_mirror: &str, status: &mut Status) -> Result<()> {
     status.mirror = indexmap! {new_mirror.to_string() => get_mirror_url(new_mirror)?};
-    println!("{}", fl!("set-mirror", mirror = new_mirror));
+    info!("{}", fl!("set-mirror", mirror = new_mirror));
     apply_status(&*status)?;
 
     Ok(())
@@ -341,7 +341,7 @@ fn many(args: &clap::ArgMatches, name: &str) -> Vec<String> {
 }
 
 fn add_mirror(entry: Vec<String>, status: &mut Status) -> Result<()> {
-    println!("{}", fl!("add-mirror", mirror = entry.join(", ")));
+    info!("{}", fl!("add-mirror", mirror = entry.join(", ")));
     for i in entry {
         let mirror_url = get_mirror_url(&i)?;
         if status.mirror.get(&i).is_some() {
@@ -370,7 +370,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
                 return Err(anyhow!(fl!("debs-path-in-url")));
             }
         }
-        println!("{}", fl!("trying-get-mirror"));
+        info!("{}", fl!("trying-get-mirror"));
         let get_mirror = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()?
@@ -386,7 +386,7 @@ fn add_custom_mirror(mirror_name: &str, mirror_url: &str) -> Result<()> {
             return Err(anyhow!(fl!("custom-mirror-not-url")));
         }
     }
-    println!(
+    info!(
         "{}",
         fl!(
             "add-custom-mirror",
@@ -457,7 +457,7 @@ fn remove_component(entry: Vec<String>, mut status: Status) -> Result<()> {
     } else {
         return Err(anyhow!(fl!("no-delete-only-comp")));
     }
-    println!("{}", fl!("disable-comp", comp = entry.join(", ")));
+    info!("{}", fl!("disable-comp", comp = entry.join(", ")));
     apply_status(&status)?;
 
     Ok(())
@@ -478,7 +478,7 @@ fn add_component(args: &clap::ArgMatches, status: &mut Status) -> Result<()> {
             return Err(anyhow!(fl!("comp-not-found", comp = entry_str)));
         }
     }
-    println!("{}", fl!("enable-comp", comp = entries.join(", ")));
+    info!("{}", fl!("enable-comp", comp = entries.join(", ")));
     apply_status(status)?;
 
     Ok(())
@@ -549,15 +549,15 @@ fn read_distro_file<T: for<'de> Deserialize<'de>, P: AsRef<Path>>(file: P) -> Re
 }
 
 fn apply_status(status: &Status) -> Result<()> {
-    println!("{}", fl!("write-status"));
+    info!("{}", fl!("write-status"));
     fs::write(
         STATUS_FILE,
         format!("{}\n", serde_json::to_string(&status)?),
     )?;
     let source_list_str = gen_sources_list_string(status)?;
-    println!("{}", fl!("write-sources"));
+    info!("{}", fl!("write-sources"));
     fs::write(APT_SOURCE_FILE, source_list_str)?;
-    println!("{}", fl!("run-apt"));
+    info!("{}", fl!("run-apt"));
 
     let mb = Arc::new(MultiProgress::new());
     let pb_map: DashMap<usize, ProgressBar> = DashMap::new();

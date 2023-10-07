@@ -110,7 +110,6 @@ dependencies = [
  "indexmap 2.0.2",
  "indicatif",
  "lazy_static",
- "log",
  "oma-console",
  "oma-refresh",
  "os-release",
