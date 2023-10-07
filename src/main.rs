@@ -1,23 +1,30 @@
 use anyhow::{anyhow, Result};
+use dashmap::DashMap;
 use futures::future;
 use indexmap::{indexmap, IndexMap};
-use indicatif::ProgressBar;
+use indicatif::{MultiProgress, ProgressBar};
 use lazy_static::lazy_static;
 use log::warn;
+use oma_console::pb::{oma_spinner, oma_style_pb};
+use oma_console::writer::Writer;
+use oma_refresh::db::{OmaRefresh, RefreshEvent};
+use oma_refresh::DownloadEvent;
 use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
+use rustix::process;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{
     collections::HashMap,
     fs,
     io::Write,
     path::{Path, PathBuf},
-    process::Command,
     time::{Duration, Instant},
 };
-use tokio::runtime::Builder;
+use tokio::runtime::{Builder, Runtime};
 use url::Url;
 
 mod cli;
@@ -102,10 +109,7 @@ fn main() -> Result<()> {
             set_mirror(args.get_one::<String>("MIRROR").unwrap(), &mut status)?;
         }
         Some(("add-mirror", args)) => {
-            add_mirror(
-                many(args, "MIRROR"),
-                &mut status,
-            )?;
+            add_mirror(many(args, "MIRROR"), &mut status)?;
         }
         Some(("remove-mirror", args)) => {
             remove_mirror(args, &mut status)?;
@@ -114,10 +118,7 @@ fn main() -> Result<()> {
             add_component(args, &mut status)?;
         }
         Some(("remove-component", args)) => {
-            remove_component(
-                many(args, "COMPONENT"),
-                status,
-            )?;
+            remove_component(many(args, "COMPONENT"), status)?;
         }
         Some(("set-branch", args)) => {
             let new_branch = args.get_one::<String>("BRANCH").unwrap();
@@ -210,11 +211,7 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
     let bar = ProgressBar::new_spinner();
     let mut mirrors_score_table = if is_parallel {
         bar.set_message(fl!("test-mirrors"));
-        let runtime = Builder::new_multi_thread()
-            .enable_all()
-            .worker_threads(2)
-            .build()
-            .unwrap();
+        let runtime = async_runtime();
         let client = reqwest::Client::new();
         runtime.block_on(async move {
             let task = mirrors_indexmap
@@ -264,6 +261,16 @@ fn get_mirror_score_table(is_parallel: bool) -> Result<Vec<(String, String)>> {
     }
 
     Ok(result)
+}
+
+fn async_runtime() -> Runtime {
+    let runtime = Builder::new_multi_thread()
+        .enable_all()
+        .worker_threads(2)
+        .build()
+        .unwrap();
+
+    runtime
 }
 
 fn get_available_mirror(status: &Status) -> Result<()> {
@@ -329,7 +336,7 @@ fn many(args: &clap::ArgMatches, name: &str) -> Vec<String> {
         .into_iter()
         .map(|x| x.to_owned())
         .collect::<Vec<_>>();
-        
+
     entry
 }
 
@@ -519,7 +526,7 @@ fn read_status() -> Result<Status> {
 }
 
 fn is_root() -> bool {
-    nix::unistd::geteuid().is_root()
+    process::geteuid().is_root()
 }
 
 #[cfg(feature = "aosc")]
@@ -547,22 +554,93 @@ fn apply_status(status: &Status) -> Result<()> {
         STATUS_FILE,
         format!("{}\n", serde_json::to_string(&status)?),
     )?;
-    #[cfg(all(feature = "aosc", not(feature = "retro")))]
-    {
-        println!("{}", fl!("run-atm-refresh"));
-        Command::new("atm")
-            .arg("refresh")
-            .spawn()?
-            .wait_with_output()?;
-    }
     let source_list_str = gen_sources_list_string(status)?;
     println!("{}", fl!("write-sources"));
     fs::write(APT_SOURCE_FILE, source_list_str)?;
     println!("{}", fl!("run-apt"));
-    Command::new("apt-get")
-        .arg("update")
-        .spawn()?
-        .wait_with_output()?;
+
+    let mb = Arc::new(MultiProgress::new());
+    let pb_map: DashMap<usize, ProgressBar> = DashMap::new();
+
+    let global_is_set = Arc::new(AtomicBool::new(false));
+
+    let runtime = async_runtime();
+
+    runtime.block_on(OmaRefresh::scan(None, true)?.start(
+        move |count, event, total| {
+            match event {
+                RefreshEvent::ClosingTopic(topic_name) => {
+                    mb.println(format!("Closing topic {topic_name}")).unwrap();
+                }
+                RefreshEvent::DownloadEvent(event) => match event {
+                    DownloadEvent::ChecksumMismatchRetry { filename, times } => {
+                        mb.println(format!(
+                            "{filename} checksum failed, retrying {times} times"
+                        ))
+                        .unwrap();
+                    }
+                    DownloadEvent::GlobalProgressSet(size) => {
+                        if let Some(pb) = pb_map.get(&0) {
+                            pb.set_position(size);
+                        }
+                    }
+                    DownloadEvent::GlobalProgressInc(size) => {
+                        if let Some(pb) = pb_map.get(&0) {
+                            pb.inc(size);
+                        }
+                    }
+                    DownloadEvent::ProgressDone => {
+                        if let Some(pb) = pb_map.get(&(count + 1)) {
+                            pb.finish_and_clear();
+                        }
+                    }
+                    DownloadEvent::NewProgressSpinner(msg) => {
+                        let (sty, inv) = oma_spinner(false);
+                        let pb = mb.insert(count + 1, ProgressBar::new_spinner().with_style(sty));
+                        pb.set_message(msg);
+                        pb.enable_steady_tick(inv);
+                        pb_map.insert(count + 1, pb);
+                    }
+                    DownloadEvent::NewProgress(size, msg) => {
+                        let sty = oma_style_pb(Writer::default(), false);
+                        let pb = mb.insert(count + 1, ProgressBar::new(size).with_style(sty));
+                        pb.set_message(msg);
+                        pb_map.insert(count + 1, pb);
+                    }
+                    DownloadEvent::ProgressInc(size) => {
+                        let pb = pb_map.get(&(count + 1)).unwrap();
+                        pb.inc(size);
+                    }
+                    DownloadEvent::CanNotGetSourceNextUrl(e) => {
+                        mb.println(format!("Error: {e}")).unwrap();
+                    }
+                    DownloadEvent::Done(_) => {
+                        return;
+                    }
+                    DownloadEvent::AllDone => {
+                        if let Some(gpb) = pb_map.get(&0) {
+                            gpb.finish_and_clear();
+                        }
+                    }
+                },
+            }
+
+            if let Some(total) = total {
+                if !global_is_set.load(Ordering::SeqCst) {
+                    let sty = oma_style_pb(Writer::default(), true);
+                    let gpb = mb.insert(
+                        0,
+                        ProgressBar::new(total)
+                            .with_style(sty)
+                            .with_prefix("Progress"),
+                    );
+                    pb_map.insert(0, gpb);
+                    global_is_set.store(true, Ordering::SeqCst);
+                }
+            }
+        },
+        || fl!("generated"),
+    ))?;
 
     Ok(())
 }
