@@ -224,10 +224,7 @@ fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
             for (index, mirror_name) in mirrors_indexmap.keys().enumerate() {
                 if let Ok(time) = results[index] {
                     let score = SPEEDTEST_FILE_SIZE_KIB / time;
-                    barc.println(format!(
-                        "{mirror_name}: {}",
-                        format_speed(SPEEDTEST_FILE_SIZE_KIB / time)
-                    ));
+                    barc.println(format!("{mirror_name}: {}", format_speed(score)));
                     all_score.push((mirror_name.to_string(), score));
                 }
                 barc.inc(1);
@@ -729,6 +726,7 @@ fn get_mirror_speed_score(mirror_name: &str) -> Result<f32> {
     let download_url = Url::parse(&get_mirror_url(mirror_name)?)?.join(DOWNLOAD_PATH)?;
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(10))
+        .user_agent("apt-gen-list")
         .build()?;
     let timer = Instant::now();
     let file = client.get(download_url).send()?.bytes()?;
