@@ -217,7 +217,6 @@ fn get_mirror_score(is_parallel: bool) -> Result<(String, String)> {
         runtime.block_on(async move {
             let task = mirrors_indexmap
                 .keys()
-                .into_iter()
                 .map(|x| get_mirror_speed_score_parallel(x, &client));
             let results = future::join_all(task).await;
             let mut all_score = Vec::new();
@@ -366,7 +365,6 @@ fn many(args: &clap::ArgMatches, name: &str) -> Vec<String> {
     let entry = args
         .get_many::<String>(name)
         .unwrap()
-        .into_iter()
         .map(|x| x.to_owned())
         .collect::<Vec<_>>();
 
@@ -682,7 +680,7 @@ fn gen_sources_list_string(status: &Status) -> Result<String> {
     let mut result = format!("{}\n", fl!("generated"));
     let directory_name = get_directory_name();
     for (_, mirror_url) in &status.mirror {
-        let mirror_url = if mirror_url.ends_with("/") {
+        let mirror_url = if mirror_url.ends_with('/') {
             mirror_url.to_owned()
         } else {
             format!("{}/", mirror_url)
