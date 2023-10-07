@@ -3,12 +3,12 @@ use dashmap::DashMap;
 use futures::future;
 use indexmap::{indexmap, IndexMap};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use lazy_static::lazy_static;
 use oma_console::pb::{oma_spinner, oma_style_pb};
 use oma_console::writer::Writer;
 use oma_console::{info, warn};
 use oma_refresh::db::{OmaRefresh, RefreshEvent};
 use oma_refresh::DownloadEvent;
+use once_cell::sync::Lazy;
 use os_release::OsRelease;
 use owo_colors::OwoColorize;
 use reqwest::Client;
@@ -32,12 +32,10 @@ mod i18n;
 
 use i18n::I18N_LOADER;
 
-lazy_static! {
-    static ref REPO_DATA_DIRECTORY: PathBuf = get_repo_data_path();
-    static ref REPO_MIRROR_FILE: PathBuf = REPO_DATA_DIRECTORY.join("mirrors.yml");
-    static ref REPO_COMPONENT_FILE: PathBuf = REPO_DATA_DIRECTORY.join("comps.yml");
-    static ref REPO_BRANCH_FILE: PathBuf = REPO_DATA_DIRECTORY.join("branches.yml");
-}
+static REPO_DATA_DIRECTORY: Lazy<PathBuf> = Lazy::new(get_repo_data_path);
+static REPO_MIRROR_FILE: Lazy<PathBuf> = Lazy::new(|| REPO_DATA_DIRECTORY.join("mirrors.yml"));
+static REPO_COMPONENT_FILE: Lazy<PathBuf> = Lazy::new(|| REPO_DATA_DIRECTORY.join("comps.yml"));
+static REPO_BRANCH_FILE: Lazy<PathBuf> = Lazy::new(|| REPO_DATA_DIRECTORY.join("branches.yml"));
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const APT_SOURCE_FILE: &str = "/etc/apt/sources.list";

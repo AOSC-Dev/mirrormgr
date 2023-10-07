@@ -3,7 +3,7 @@ use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester, LanguageLoader,
 };
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use rust_embed::RustEmbed;
 use unic_langid::LanguageIdentifier;
 
@@ -18,10 +18,8 @@ macro_rules! fl {
     }};
 }
 
-lazy_static! {
-    pub static ref I18N_LOADER: FluentLanguageLoader =
-        load_i18n().expect("Unable to load i18n strings.");
-}
+pub static I18N_LOADER: Lazy<FluentLanguageLoader> =
+    Lazy::new(|| load_i18n().expect("Unable to load i18n strings."));
 
 #[derive(RustEmbed)]
 #[folder = "i18n"]
