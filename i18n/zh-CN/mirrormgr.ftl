@@ -33,6 +33,7 @@ branch-not-found = 分支未定义或不存在！
 branch-data-error = 无法读取分支列表数据！
 mirror-not-found = 找不到镜像源：{$mirror} 。请使用 `apt-gen-list list-mirrors` 查看源列表，或使用 `apt-gen-list add-custom-mirror` 添加自定义源。
 mirror-already-enabled = 之前已启用 {$mirror} ！
+mirror-already-enabled = 之前已关闭 {$mirror} ！
 mirror-error = 无法从 {$mirror} 下载测试数据，请检查你的网络连接！
 mirror-test-failed = 无法测试任何镜像源！请检查你的网络连接！
 custom-mirror-not-found = 自定义镜像源 {$mirror} 不存在！

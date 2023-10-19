@@ -7,6 +7,7 @@ use std::{
 use anyhow::{bail, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
+use oma_console::warn;
 use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -158,15 +159,74 @@ impl MirrorManager {
         Self { status }
     }
 
-    pub fn set_mirror<P: AsRef<Path>>(&mut self, mirror: String, mirrors_file: P) -> Result<()> {
-        let mirrors = Mirrors::from_file(mirrors_file)?;
-        let entry = mirrors.0.get(&mirror);
+    pub fn set_mirror(&mut self, set_mirror: String, mirrors: &Mirrors) -> Result<()> {
+        let entry = mirrors.0.get(&set_mirror);
 
         if entry.is_none() {
-            bail!(fl!("mirror-not-found"));
+            bail!(fl!("mirror-not-found", mirror = set_mirror));
         }
 
-        self.status.set_mirror(mirror, entry.unwrap().url.clone());
+        self.status
+            .set_mirror(set_mirror, entry.unwrap().url.clone());
+
+        Ok(())
+    }
+
+    pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: Vec<String>) -> Result<()> {
+        for m in add_mirrors {
+            let entry = mirrors.0.get(&m);
+
+            if entry.is_none() {
+                bail!(fl!("mirror-not-found", mirror = m));
+            }
+
+            let res = self
+                .status
+                .add_mirror(m.clone(), entry.unwrap().url.clone());
+
+            if !res {
+                warn!("{}", fl!("mirror-already-enabled", mirror = m));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn remove_mirrors(&mut self, mirrors: &Mirrors, remove_mirrors: Vec<String>) -> Result<()> {
+        if self.status.mirror.len() <= 1 {
+            bail!(fl!("no-delete-only-mirror"));
+        }
+
+        for m in remove_mirrors {
+            let entry = mirrors.0.get(&m);
+
+            if entry.is_none() {
+                bail!(fl!("mirror-not-found", mirror = m));
+            }
+
+            let res = self.status.remove_mirror(&m);
+
+            if !res {
+                warn!("{}", fl!("mirror-already-disabled", mirror = m));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn add_component(&mut self, comps: &Comps, add_comps: Vec<String>) -> Result<()> {
+        for c in add_comps {
+            let has = comps.has(&c);
+            if !has {
+                bail!(fl!("comp-not-found"))
+            }
+
+            let res = self.status.add_component(c);
+
+            if !res {
+                warn!("{}", fl!("comp-already-enabled"));
+            }
+        }
 
         Ok(())
     }

@@ -32,6 +32,7 @@ branch-not-found = Branch undefined or does not exist!
 branch-data-error = Cannot read branch list data!
 mirror-not-found = Cannot find mirror: {$mirror}. Please use `apt-gen-list list-mirrors` to display a list of available mirrors, or use `apt-gen-list add-custom-mirror` to add a custom mirror.
 mirror-already-enabled = Mirror {$mirror} is already enabled!
+mirror-already-disabled = Mirror {$mirror} is already disabled！
 mirror-error = Failed to download test data from {$mirror}, please check your network connection!
 mirror-test-failed = Get All mirror failed! Please check your network connection!
 custom-mirror-not-found = Custom mirror {$mirror} does not exist!
