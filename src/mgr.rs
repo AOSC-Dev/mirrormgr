@@ -1,26 +1,23 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::{self},
     path::Path,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
 use once_cell::sync::OnceCell;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::fl;
 
 pub struct MirrorManager {
-    config: MirrorConfig,
-    mirrors_map: OnceCell<HashMap<String, Vec<MirrorInfo>>>,
-    branches_map: OnceCell<HashMap<String, Vec<BranchInfo>>>,
-    comps: OnceCell<Vec<String>>,
+    status: MirrorStatus,
 }
 
 #[derive(Serialize, Deserialize)]
-struct MirrorConfig {
+struct MirrorStatus {
     branch: String,
     component: Vec<String>,
     mirror: IndexMap<String, String>,
@@ -36,7 +33,48 @@ struct BranchInfo {
     suites: Vec<String>,
 }
 
-impl Default for MirrorConfig {
+#[derive(Serialize, Deserialize)]
+pub struct Branches(HashMap<String, BranchInfo>);
+
+#[derive(Serialize, Deserialize)]
+pub struct Mirrors(HashMap<String, MirrorInfo>);
+
+#[derive(Serialize, Deserialize)]
+pub struct Comps(HashMap<String, String>);
+
+trait ReadConfig: DeserializeOwned {
+    fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let f = fs::read(path)?;
+        let s = serde_json::from_slice(&f)?;
+
+        Ok(s)
+    }
+
+    fn has(&self, s: &str) -> bool;
+}
+
+impl ReadConfig for MirrorStatus {
+    fn has(&self, s: &str) -> bool {
+        self.mirror.contains_key(s)
+    }
+}
+impl ReadConfig for Branches {
+    fn has(&self, s: &str) -> bool {
+        self.0.contains_key(s)
+    }
+}
+impl ReadConfig for Comps {
+    fn has(&self, s: &str) -> bool {
+        self.0.contains_key(s)
+    }
+}
+impl ReadConfig for Mirrors {
+    fn has(&self, s: &str) -> bool {
+        self.0.contains_key(s)
+    }
+}
+
+impl Default for MirrorStatus {
     fn default() -> Self {
         Self {
             branch: "stable".to_string(),
@@ -46,21 +84,14 @@ impl Default for MirrorConfig {
     }
 }
 
-impl MirrorConfig {
-    pub fn from_file<P: AsRef<Path>>(config_path: P) -> Result<Self> {
-        let f = fs::read(config_path)?;
-        let s = serde_json::from_slice(&f)?;
-
-        Ok(s)
-    }
-
+impl MirrorStatus {
     pub fn set_mirror(&mut self, mirror: String, url: String) {
         self.mirror.clear();
         self.add_mirror(mirror, url);
     }
 
     pub fn add_mirror(&mut self, mirror: String, url: String) -> bool {
-        if self.mirror.get(&mirror).is_none() {
+        if !self.has(&mirror) {
             self.mirror.insert(mirror, url);
             return true;
         }
@@ -69,7 +100,7 @@ impl MirrorConfig {
     }
 
     pub fn remove_mirror(&mut self, mirror: &str) -> bool {
-        if self.mirror.get(mirror).is_some() {
+        if self.has(mirror) {
             self.mirror.remove(mirror);
             return true;
         }
@@ -115,6 +146,27 @@ impl MirrorConfig {
     pub fn write_config<P: AsRef<Path>>(&mut self, config_path: P) -> Result<()> {
         let s = serde_json::to_vec(self)?;
         fs::write(config_path, s)?;
+
+        Ok(())
+    }
+}
+
+impl MirrorManager {
+    pub fn new<P: AsRef<Path>>(status_file: P) -> Self {
+        let status = MirrorStatus::from_file(status_file).unwrap_or_default();
+
+        Self { status }
+    }
+
+    pub fn set_mirror<P: AsRef<Path>>(&mut self, mirror: String, mirrors_file: P) -> Result<()> {
+        let mirrors = Mirrors::from_file(mirrors_file)?;
+        let entry = mirrors.0.get(&mirror);
+
+        if entry.is_none() {
+            bail!(fl!("mirror-not-found"));
+        }
+
+        self.status.set_mirror(mirror, entry.unwrap().url.clone());
 
         Ok(())
     }
