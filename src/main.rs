@@ -651,6 +651,10 @@ fn apply_status(status: &Status) -> Result<()> {
                             gpb.finish_and_clear();
                         }
                     }
+                    DownloadEvent::ProgressSet(size) => {
+                        let pb = pb_map.get(&(count + 1)).unwrap();
+                        pb.set_position(size);
+                    }
                 },
             }
 
