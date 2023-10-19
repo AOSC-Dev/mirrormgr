@@ -250,8 +250,6 @@ version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66d3bea5bcc3ecc38fe5388e6bc35e6fe7bd665eb3ae9a44283e15b91ad3867d"
 dependencies = [
- "bzip2",
- "flate2",
  "lazy_static",
  "libc",
 ]
@@ -267,27 +265,6 @@ name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
-
-[[package]]
-name = "bzip2"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdb116a6ef3f6c3698828873ad02c3014b3c85cadb88496095628e3ef1e347f8"
-dependencies = [
- "bzip2-sys",
- "libc",
-]
-
-[[package]]
-name = "bzip2-sys"
-version = "0.1.11+1.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "736a955f3fa7875102d57c82b8cac37ec45224a07fd32d58f9f7a186b6cd4cdc"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
-]
 
 [[package]]
 name = "cc"
@@ -1631,16 +1608,16 @@ dependencies = [
 
 [[package]]
 name = "oma-fetch"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27d53f79a918d3aeee109d371717e4e5b63061e97966b57fff6e5a8cefe1b695"
+checksum = "f9b05dc686892376468c3f0e75c069b3173fe71965e788e4ca0f4090a2cbe407"
 dependencies = [
  "async-compression",
  "derive_builder",
  "futures",
  "hex",
  "oma-console",
- "oma-utils",
+ "oma-utils 0.1.9",
  "reqwest",
  "serde",
  "sha2",
@@ -1650,9 +1627,9 @@ dependencies = [
 
 [[package]]
 name = "oma-refresh"
-version = "0.6.6"
+version = "0.6.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5609ca0ec132be4fef8fca22eb6e7cf4a10ed0d97d3efb3a9167f1eee09585c1"
+checksum = "a096ee0c0962c0afa7be5a52786396df26f02acf65f663837cee8b282016bd49"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1662,7 +1639,7 @@ dependencies = [
  "oma-debcontrol",
  "oma-fetch",
  "oma-topics",
- "oma-utils",
+ "oma-utils 0.2.0",
  "once_cell",
  "reqwest",
  "sequoia-openpgp",
@@ -1701,6 +1678,18 @@ dependencies = [
  "os-release",
  "thiserror",
  "url-escape",
+]
+
+[[package]]
+name = "oma-utils"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b20e9a2e8003d5c94c479280968d2630bc9b69335e00c590fb044cb95e9e1fba"
+dependencies = [
+ "oma-console",
+ "once_cell",
+ "os-release",
+ "thiserror",
 ]
 
 [[package]]
@@ -2191,10 +2180,8 @@ dependencies = [
  "anyhow",
  "base64",
  "buffered-reader",
- "bzip2",
  "chrono",
  "dyn-clone",
- "flate2",
  "getrandom 0.2.10",
  "idna 0.3.0",
  "lalrpop",
