@@ -83,6 +83,8 @@ pub fn execute() -> Result<()> {
         }
     }
 
+    let mm_info = Mirrors::from_path(MIRRORS_PATH)?;
+    mm.add_mirrors(&mm_info, add_mirrors)?;
     mm.remove_mirrors(&remove_mirrors)?;
 
     let branches = Branches::from_path(BRANCHES_PATH)?;
