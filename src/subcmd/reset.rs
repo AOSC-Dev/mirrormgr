@@ -12,8 +12,6 @@ pub fn execute() -> Result<()> {
     let mm = MirrorManager::reset(status);
     let branches = Branches::from_path(BRANCHES_PATH)?;
 
-    mm.apply_config(&branches, APT_CONFIG)?;
-
     info!("{}", fl!("write-sources"));
     mm.apply_config(&branches, APT_CONFIG)?;
 
