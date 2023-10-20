@@ -13,7 +13,6 @@ pub fn execute(args: NormalArgs) -> Result<()> {
     let mut mm = MirrorManager::new(status);
 
     if let Some(mirrors) = args.mirrors {
-        // let mm_info = Mirrors::from_path(MIRRORS_PATH)?;
         mm.remove_mirrors(&mirrors)?;
     }
 

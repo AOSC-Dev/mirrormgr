@@ -103,6 +103,7 @@ impl DistroConfig for Branches {
         self.0.contains_key(s)
     }
 }
+
 impl DistroConfig for Comps {
     fn has(&self, s: &str) -> bool {
         self.0.contains_key(s)
@@ -111,6 +112,12 @@ impl DistroConfig for Comps {
 impl DistroConfig for Mirrors {
     fn has(&self, s: &str) -> bool {
         self.0.contains_key(s)
+    }
+}
+
+impl Mirrors {
+    pub fn list_mirrors(&self) -> Vec<&str> {
+        self.0.keys().map(|x| x.as_str()).collect()
     }
 }
 
@@ -127,12 +134,12 @@ impl Default for MirrorStatus {
 impl MirrorStatus {
     pub fn set_mirror(&mut self, mirror: &str, url: String) {
         self.mirror.clear();
-        self.add_mirror(mirror.to_owned(), url);
+        self.add_mirror(mirror, url);
     }
 
-    pub fn add_mirror(&mut self, mirror: String, url: String) -> bool {
+    pub fn add_mirror(&mut self, mirror: &str, url: String) -> bool {
         if !self.has(&mirror) {
-            self.mirror.insert(mirror, url);
+            self.mirror.insert(mirror.to_owned(), url);
             return true;
         }
 
@@ -187,6 +194,10 @@ impl MirrorStatus {
 
         Ok(())
     }
+
+    pub fn list_enabled_mirrors(&self) -> Vec<&str> {
+        self.mirror.keys().map(|x| x.as_str()).collect()
+    }
 }
 
 impl MirrorManager {
@@ -221,9 +232,9 @@ impl MirrorManager {
         Ok(())
     }
 
-    pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: Vec<String>) -> Result<()> {
+    pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: Vec<&str>) -> Result<()> {
         for m in add_mirrors {
-            let entry = mirrors.0.get(&m);
+            let entry = mirrors.0.get(m);
 
             if entry.is_none() {
                 bail!(fl!("mirror-not-found", mirror = m));
@@ -341,5 +352,9 @@ impl MirrorManager {
         fs::write(apt_path, res).context("Can not write apt config")?;
 
         Ok(())
+    }
+
+    pub fn list_enabled_mirrors(&self) -> Vec<&str> {
+        self.status.list_enabled_mirrors()
     }
 }

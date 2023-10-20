@@ -14,7 +14,10 @@ pub fn execute(args: NormalArgs) -> Result<()> {
 
     if let Some(mirrors) = args.mirrors {
         let mm_info = Mirrors::from_path(MIRRORS_PATH)?;
-        mm.add_mirrors(&mm_info, mirrors)?;
+        mm.add_mirrors(
+            &mm_info,
+            mirrors.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
+        )?;
     }
 
     if let Some(comps) = args.components {

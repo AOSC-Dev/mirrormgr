@@ -5,7 +5,7 @@ mod utils;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
-use subcmd::{add, remove, reset, set};
+use subcmd::{add, menu, remove, reset, set};
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";
@@ -17,7 +17,7 @@ const APT_CONFIG: &str = "/etc/apt/sources.list";
 #[clap(about, version, author)]
 struct Args {
     #[clap(subcommand)]
-    subcommand: MirrorMgrCommand,
+    subcommand: Option<MirrorMgrCommand>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -30,6 +30,8 @@ enum MirrorMgrCommand {
     Remove(NormalArgs),
     /// Reset all APT repositories mirror settings
     Reset,
+    /// Mirrormgr menu
+    Menu,
 }
 
 #[derive(Parser, Debug)]
@@ -53,10 +55,17 @@ pub struct NormalArgs {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    match args.subcommand {
-        MirrorMgrCommand::Set(s) => set::execute(s),
-        MirrorMgrCommand::Add(a) => add::execute(a),
-        MirrorMgrCommand::Remove(a) => remove::execute(a),
-        MirrorMgrCommand::Reset => reset::execute(),
+    if let Some(subcmd) = args.subcommand {
+        match subcmd {
+            MirrorMgrCommand::Set(s) => set::execute(s),
+            MirrorMgrCommand::Add(a) => add::execute(a),
+            MirrorMgrCommand::Remove(a) => remove::execute(a),
+            MirrorMgrCommand::Reset => reset::execute(),
+            MirrorMgrCommand::Menu => menu::execute(),
+        }?;
+    } else {
+        menu::execute()?
     }
+
+    Ok(())
 }
