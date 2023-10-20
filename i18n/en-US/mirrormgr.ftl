@@ -30,6 +30,7 @@ comp-not-found = Component {$comp} does not exist.
 comp-already-enabled = Component {$comp} is already enabled.
 branch-not-found = Branch undefined or does not exist!
 branch-data-error = Cannot read branch list data!
+branch-already-enabled = Branch {$branch} is already enabled.
 mirror-not-found = Cannot find mirror: {$mirror}. Please use `apt-gen-list list-mirrors` to display a list of available mirrors, or use `apt-gen-list add-custom-mirror` to add a custom mirror.
 mirror-already-enabled = Mirror {$mirror} is already enabled!
 mirror-already-disabled = Mirror {$mirror} is already disabled！

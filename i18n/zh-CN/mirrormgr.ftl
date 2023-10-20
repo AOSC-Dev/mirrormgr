@@ -31,6 +31,7 @@ comp-not-found = 组件 {$comp} 不存在。
 comp-already-enabled = 组件 {$comp} 已启用。
 branch-not-found = 分支未定义或不存在！
 branch-data-error = 无法读取分支列表数据！
+branch-already-enabled = 分支 {$branch} 已经启动
 mirror-not-found = 找不到镜像源：{$mirror} 。请使用 `apt-gen-list list-mirrors` 查看源列表，或使用 `apt-gen-list add-custom-mirror` 添加自定义源。
 mirror-already-enabled = 之前已启用 {$mirror} ！
 mirror-already-enabled = 之前已关闭 {$mirror} ！
