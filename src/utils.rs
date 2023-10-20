@@ -18,7 +18,6 @@ pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
         .create(true)
         .read(true)
         .write(true)
-        .truncate(true)
         .open(status)?;
 
     Ok(f)

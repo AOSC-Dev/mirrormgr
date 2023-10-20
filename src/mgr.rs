@@ -1,24 +1,25 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
     fs::{self, File},
-    io::{Read, Write},
-    path::{Path, PathBuf},
+    io::{Read, Seek, SeekFrom, Write},
+    path::Path,
 };
 
 use anyhow::{bail, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
-use oma_console::warn;
+use oma_console::{info, warn};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::fl;
 
 pub struct MirrorManager {
     status: MirrorStatus,
-    status_path: File,
+    status_file: File,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct MirrorStatus {
     branch: String,
     component: Vec<String>,
@@ -178,12 +179,9 @@ impl MirrorStatus {
         true
     }
 
-    pub fn to_string(&self) -> Result<String> {
-        Ok(serde_json::to_string(self)?)
-    }
-
     pub fn write_config(&self, status_file: &File) -> Result<()> {
         let mut status_file = status_file;
+        status_file.seek(SeekFrom::Start(0))?;
         let s = serde_json::to_vec(self)?;
         status_file.write_all(&s)?;
 
@@ -197,7 +195,16 @@ impl MirrorManager {
 
         Self {
             status,
-            status_path: status_file,
+            status_file,
+        }
+    }
+
+    pub fn reset(status_file: File) -> Self {
+        let status = MirrorStatus::default();
+
+        Self {
+            status,
+            status_file,
         }
     }
 
@@ -226,6 +233,8 @@ impl MirrorManager {
                 .status
                 .add_mirror(m.clone(), entry.unwrap().url.clone());
 
+            info!("{}", fl!("set-mirror", mirror = m.clone()));
+
             if !res {
                 warn!("{}", fl!("mirror-already-enabled", mirror = m));
             }
@@ -234,16 +243,17 @@ impl MirrorManager {
         Ok(())
     }
 
-    pub fn remove_mirrors(&mut self, remove_mirrors: Vec<String>) -> Result<()> {
+    pub fn remove_mirrors(&mut self, remove_mirrors: &[String]) -> Result<()> {
         if self.status.mirror.len() <= 1 {
             bail!(fl!("no-delete-only-mirror"));
         }
 
         for m in remove_mirrors {
+            info!("{}", fl!("remove-mirror", mirror = m.clone()));
             let res = self.status.remove_mirror(&m);
 
             if !res {
-                warn!("{}", fl!("mirror-already-disabled", mirror = m));
+                warn!("{}", fl!("mirror-already-disabled", mirror = m.clone()));
             }
         }
 
@@ -272,6 +282,8 @@ impl MirrorManager {
             if c == "main" {
                 bail!(fl!("no-delete-only-comp"))
             }
+
+            info!("{}", fl!("disable-comp", comp = c.clone()));
 
             let res = self.status.remove_component(&c);
 
@@ -309,6 +321,12 @@ impl MirrorManager {
 
         for (_, url) in &self.status.mirror {
             for branch in branches {
+                let url = if url.ends_with('/') {
+                    Cow::Borrowed(url)
+                } else {
+                    Cow::Owned(format!("{url}/"))
+                };
+
                 let entry = format!("deb {url}debs {branch} {components}\n",);
                 s.push_str(&entry);
             }
@@ -318,7 +336,7 @@ impl MirrorManager {
     }
 
     pub fn apply_config<P: AsRef<Path>>(&self, branches: &Branches, apt_path: P) -> Result<()> {
-        self.status.write_config(&self.status_path)?;
+        self.status.write_config(&self.status_file)?;
         let res = self.try_to_string(branches)?;
         fs::write(apt_path, res).context("Can not write apt config")?;
 

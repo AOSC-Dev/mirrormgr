@@ -1,0 +1,33 @@
+use anyhow::Result;
+use oma_console::info;
+
+use crate::{
+    fl,
+    mgr::{Branches, DistroConfig, MirrorManager},
+    utils::{create_status, refresh},
+    NormalArgs, APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
+};
+
+pub fn execute(args: NormalArgs) -> Result<()> {
+    let status = create_status(STATUS_FILE)?;
+    let mut mm = MirrorManager::new(status);
+
+    if let Some(mirrors) = args.mirrors {
+        // let mm_info = Mirrors::from_path(MIRRORS_PATH)?;
+        mm.remove_mirrors(&mirrors)?;
+    }
+
+    if let Some(comps) = args.components {
+        mm.remove_components(comps)?;
+    }
+
+    let branches = Branches::from_path(BRANCHES_PATH)?;
+
+    info!("{}", fl!("write-sources"));
+    mm.apply_config(&branches, APT_CONFIG)?;
+
+    info!("{}", fl!("run-refresh"));
+    refresh()?;
+
+    Ok(())
+}

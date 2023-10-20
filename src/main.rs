@@ -1,15 +1,16 @@
-mod mgr;
 mod i18n;
+mod mgr;
 mod subcmd;
 mod utils;
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
-use subcmd::set;
-use anyhow::Result;
+use subcmd::{add, remove, reset, set};
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";
 const BRANCHES_PATH: &str = "/usr/share/distro-repository-data/branches.yml";
+const COMPONENTS_PATH: &str = "/usr/share/distro-repository/comps.yml";
 const APT_CONFIG: &str = "/etc/apt/sources.list";
 
 #[derive(Parser, Debug)]
@@ -27,6 +28,8 @@ enum MirrorMgrCommand {
     Add(NormalArgs),
     /// Remove APT repository mirror, branch and components
     Remove(NormalArgs),
+    /// Reset all APT repositories mirror settings
+    Reset,
 }
 
 #[derive(Parser, Debug)]
@@ -42,20 +45,18 @@ pub struct Set {
 #[group(required = true)]
 pub struct NormalArgs {
     #[clap(short, long)]
-    mirror: Option<Vec<String>>,
-    #[clap(short, long)]
-    branch: Option<String>,
+    mirrors: Option<Vec<String>>,
     #[clap(short, long)]
     components: Option<Vec<String>>,
 }
-
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.subcommand {
         MirrorMgrCommand::Set(s) => set::execute(s),
-        MirrorMgrCommand::Add(_) => todo!(),
-        MirrorMgrCommand::Remove(_) => todo!(),
+        MirrorMgrCommand::Add(a) => add::execute(a),
+        MirrorMgrCommand::Remove(a) => remove::execute(a),
+        MirrorMgrCommand::Reset => reset::execute(),
     }
 }
