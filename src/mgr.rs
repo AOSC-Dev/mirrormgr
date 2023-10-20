@@ -1,6 +1,7 @@
 use std::{
-    collections::{HashMap, HashSet},
-    fs::{self},
+    collections::HashMap,
+    fs::{self, File},
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -8,14 +9,13 @@ use anyhow::{bail, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
 use oma_console::warn;
-use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::fl;
 
 pub struct MirrorManager {
     status: MirrorStatus,
-    status_path: PathBuf,
+    status_path: File,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,10 +44,25 @@ pub struct Mirrors(HashMap<String, MirrorInfo>);
 #[derive(Serialize, Deserialize)]
 pub struct Comps(HashMap<String, String>);
 
-trait DistroConfig: DeserializeOwned {
-    fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+pub trait DistroConfig: DeserializeOwned {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let f = fs::read(path)?;
-        let s = serde_json::from_slice(&f)?;
+        let s = serde_yaml::from_slice(&f)?;
+
+        Ok(s)
+    }
+
+    fn from_str(s: &str) -> Result<Self> {
+        let s = serde_yaml::from_str(&s)?;
+
+        Ok(s)
+    }
+
+    fn from_file(f: &File) -> Result<Self> {
+        let mut f = f;
+        let mut buf = vec![];
+        f.read_to_end(&mut buf)?;
+        let s = serde_yaml::from_slice(&buf)?;
 
         Ok(s)
     }
@@ -56,6 +71,28 @@ trait DistroConfig: DeserializeOwned {
 }
 
 impl DistroConfig for MirrorStatus {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let f = fs::read(path)?;
+        let s = serde_json::from_slice(&f)?;
+
+        Ok(s)
+    }
+
+    fn from_file(f: &File) -> Result<Self> {
+        let mut f = f;
+        let mut buf = vec![];
+        f.read_to_end(&mut buf)?;
+        let s = serde_json::from_slice(&buf)?;
+
+        Ok(s)
+    }
+
+    fn from_str(s: &str) -> Result<Self> {
+        let s = serde_json::from_str(&s)?;
+
+        Ok(s)
+    }
+
     fn has(&self, s: &str) -> bool {
         self.mirror.contains_key(s)
     }
@@ -87,9 +124,9 @@ impl Default for MirrorStatus {
 }
 
 impl MirrorStatus {
-    pub fn set_mirror(&mut self, mirror: String, url: String) {
+    pub fn set_mirror(&mut self, mirror: &str, url: String) {
         self.mirror.clear();
-        self.add_mirror(mirror, url);
+        self.add_mirror(mirror.to_owned(), url);
     }
 
     pub fn add_mirror(&mut self, mirror: String, url: String) -> bool {
@@ -131,12 +168,12 @@ impl MirrorStatus {
         false
     }
 
-    pub fn set_branch(&mut self, branch: String) -> bool {
+    pub fn set_branch(&mut self, branch: &str) -> bool {
         if self.branch == branch {
             return false;
         }
 
-        self.branch = branch;
+        self.branch = branch.to_string();
 
         true
     }
@@ -145,26 +182,27 @@ impl MirrorStatus {
         Ok(serde_json::to_string(self)?)
     }
 
-    pub fn write_config<P: AsRef<Path>>(&self, config_path: P) -> Result<()> {
+    pub fn write_config(&self, status_file: &File) -> Result<()> {
+        let mut status_file = status_file;
         let s = serde_json::to_vec(self)?;
-        fs::write(config_path, s)?;
+        status_file.write_all(&s)?;
 
         Ok(())
     }
 }
 
 impl MirrorManager {
-    pub fn new<P: AsRef<Path>>(status_file: P) -> Self {
+    pub fn new(status_file: File) -> Self {
         let status = MirrorStatus::from_file(&status_file).unwrap_or_default();
 
         Self {
             status,
-            status_path: status_file.as_ref().to_path_buf(),
+            status_path: status_file,
         }
     }
 
-    pub fn set_mirror(&mut self, set_mirror: String, mirrors: &Mirrors) -> Result<()> {
-        let entry = mirrors.0.get(&set_mirror);
+    pub fn set_mirror(&mut self, set_mirror: &str, mirrors: &Mirrors) -> Result<()> {
+        let entry = mirrors.0.get(set_mirror);
 
         if entry.is_none() {
             bail!(fl!("mirror-not-found", mirror = set_mirror));
@@ -245,12 +283,12 @@ impl MirrorManager {
         Ok(())
     }
 
-    pub fn set_branch(&mut self, branch: String, branches: &Branches) -> Result<()> {
+    pub fn set_branch(&mut self, branch: &str, branches: &Branches) -> Result<()> {
         if !branches.has(&branch) {
             bail!("branch-not-found")
         }
 
-        let res = self.status.set_branch(branch.clone());
+        let res = self.status.set_branch(branch);
 
         if !res {
             warn!("{}", fl!("branch-already-enabled", branch = branch));
@@ -267,12 +305,11 @@ impl MirrorManager {
             .context(fl!("branch-not-found"))?
             .suites;
 
+        let components = self.status.component.join(" ");
+
         for (_, url) in &self.status.mirror {
             for branch in branches {
-                let entry = format!(
-                    "deb {url}debs {branch} {}\n",
-                    self.status.component.join(" ")
-                );
+                let entry = format!("deb {url}debs {branch} {components}\n",);
                 s.push_str(&entry);
             }
         }

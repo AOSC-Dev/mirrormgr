@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "4.0"
+clap = {version = "4.0", features = ["derive"] }
 serde_yaml = "0.9"
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -20,7 +20,7 @@ os-release = "0.1"
 indexmap = {version = "2.0", features = ["serde"]}
 futures = "0.3"
 rustix = {version = "0.38", features = ["process"] }
-dashmap = "5.5"
+dashmap = {version = "5.5", optional = true}
 oma-console = "0.5"
 ureq = "2.8"
 tokio = { version = "^1", features = ["rt-multi-thread", "rt", "time"], optional = true }
@@ -40,6 +40,6 @@ os-release = "0.1"
 [features]
 aosc = ["oma-refresh-aosc"]
 retro = ["oma-refresh-aosc"]
-oma-refresh = ["dep:oma-refresh", "dep:tokio"]
-oma-refresh-aosc = ["dep:oma-refresh", "dep:tokio", "oma-refresh/aosc"]
+oma-refresh = ["dep:oma-refresh", "dep:tokio", "dep:dashmap"]
+oma-refresh-aosc = ["dep:oma-refresh", "dep:tokio", "dep:dashmap", "oma-refresh/aosc"]
 default = ["aosc"]
