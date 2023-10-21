@@ -12,6 +12,7 @@ const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";
 const BRANCHES_PATH: &str = "/usr/share/distro-repository-data/branches.yml";
 const COMPONENTS_PATH: &str = "/usr/share/distro-repository/comps.yml";
 const APT_CONFIG: &str = "/etc/apt/sources.list";
+const CUSTOM_MIRRORS: &str = "/etc/apt-gen-list/custom_mirror.yml";
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]

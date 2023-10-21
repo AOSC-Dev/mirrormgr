@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use inquire::{
     formatter::MultiOptionFormatter,
     ui::{Color, RenderConfig, StyleSheet, Styled},
@@ -7,9 +7,9 @@ use inquire::{
 use oma_console::WRITER;
 
 use crate::{
-    mgr::{Branches, DistroConfig, MirrorManager, Mirrors},
-    utils::{create_status, root},
-    APT_CONFIG, BRANCHES_PATH, MIRRORS_PATH, STATUS_FILE,
+    mgr::{Branches, DistroConfig, MirrorManager},
+    utils::{create_status, distro_and_custom_mirror, root, refresh},
+    APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 
 pub fn execute() -> Result<()> {
@@ -17,8 +17,8 @@ pub fn execute() -> Result<()> {
     let status = create_status(STATUS_FILE)?;
     let mut mm = MirrorManager::new(status);
 
-    let mirrors = Mirrors::from_path(MIRRORS_PATH)?;
-    let mirrors = mirrors.list_mirrors();
+    let mm_info = distro_and_custom_mirror()?;
+    let mirrors = mm_info.list_mirrors();
 
     let mut default = vec![];
 
@@ -66,7 +66,13 @@ pub fn execute() -> Result<()> {
     .with_page_size(page_size as usize)
     .with_render_config(render_config)
     .prompt()
-    .map_err(|_| anyhow!(""))?;
+    .ok();
+
+    if ans.is_none() {
+        return Ok(());
+    }
+
+    let ans = ans.unwrap();
 
     let mut remove_mirrors = vec![];
 
@@ -84,12 +90,13 @@ pub fn execute() -> Result<()> {
         }
     }
 
-    let mm_info = Mirrors::from_path(MIRRORS_PATH)?;
     mm.add_mirrors(&mm_info, add_mirrors)?;
     mm.remove_mirrors(&remove_mirrors)?;
 
     let branches = Branches::from_path(BRANCHES_PATH)?;
     mm.apply_config(&branches, APT_CONFIG)?;
+
+    refresh()?;
 
     Ok(())
 }

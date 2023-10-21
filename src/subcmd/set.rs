@@ -1,7 +1,7 @@
 use crate::{
-    mgr::{Branches, DistroConfig, MirrorManager, Mirrors},
-    utils::{create_status, refresh, root},
-    Set, APT_CONFIG, BRANCHES_PATH, MIRRORS_PATH, STATUS_FILE, fl,
+    mgr::{Branches, DistroConfig, MirrorManager},
+    utils::{create_status, refresh, root, distro_and_custom_mirror},
+    Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE, fl,
 };
 use anyhow::Result;
 use oma_console::info;
@@ -13,7 +13,7 @@ pub fn execute(args: Set) -> Result<()> {
     let branches = Branches::from_path(BRANCHES_PATH)?;
 
     if let Some(mirror) = args.mirror {
-        let mirrors = Mirrors::from_path(MIRRORS_PATH)?;
+        let mirrors = distro_and_custom_mirror()?;
         mm.set_mirror(&mirror, &mirrors)?;
         info!("{}", fl!("set-mirror", mirror = mirror));
     }

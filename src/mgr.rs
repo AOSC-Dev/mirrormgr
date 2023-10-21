@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fs::{self, File},
-    io::{Read, Seek, SeekFrom, Write},
+    io::{Read, Seek, Write},
     path::Path,
 };
 
@@ -44,6 +44,9 @@ pub struct Mirrors(HashMap<String, MirrorInfo>);
 
 #[derive(Serialize, Deserialize)]
 pub struct Comps(HashMap<String, String>);
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomMirrors(HashMap<String, String>);
 
 pub trait DistroConfig: DeserializeOwned {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
@@ -115,9 +118,21 @@ impl DistroConfig for Mirrors {
     }
 }
 
+impl DistroConfig for CustomMirrors {
+    fn has(&self, s: &str) -> bool {
+        self.0.contains_key(s)
+    }
+}
+
 impl Mirrors {
     pub fn list_mirrors(&self) -> Vec<&str> {
         self.0.keys().map(|x| x.as_str()).collect()
+    }
+
+    pub fn init_custom_mirrors(&mut self, c: CustomMirrors) {
+        for (k, v) in c.0 {
+            self.0.insert(k, MirrorInfo { url: v });
+        }
     }
 }
 
@@ -188,7 +203,8 @@ impl MirrorStatus {
 
     pub fn write_config(&self, status_file: &File) -> Result<()> {
         let mut status_file = status_file;
-        status_file.seek(SeekFrom::Start(0))?;
+        status_file.set_len(0)?;
+        status_file.rewind()?;
         let s = serde_json::to_vec(self)?;
         status_file.write_all(&s)?;
 

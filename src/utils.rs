@@ -6,7 +6,11 @@ use std::{
     process::{exit, Command},
 };
 
-use crate::fl;
+use crate::{
+    fl,
+    mgr::{CustomMirrors, DistroConfig, Mirrors},
+    CUSTOM_MIRRORS, MIRRORS_PATH,
+};
 
 pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
     let status = status.as_ref();
@@ -19,9 +23,9 @@ pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
     }
 
     let f = fs::OpenOptions::new()
-        .create(true)
         .read(true)
         .write(true)
+        .create(true)
         .open(status)?;
 
     Ok(f)
@@ -165,4 +169,15 @@ pub fn root() -> Result<()> {
             .code()
             .expect("Can not get pkexec oma exit status"),
     );
+}
+
+pub fn distro_and_custom_mirror() -> Result<Mirrors> {
+    let mut all_mirrors = Mirrors::from_path(MIRRORS_PATH)?;
+    let custom = CustomMirrors::from_path(CUSTOM_MIRRORS);
+
+    if let Ok(custom) = custom {
+        all_mirrors.init_custom_mirrors(custom);
+    }
+
+    Ok(all_mirrors)
 }
