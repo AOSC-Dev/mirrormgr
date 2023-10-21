@@ -203,7 +203,10 @@ impl MirrorStatus {
 
     pub fn write_config(&self, status_file: &File) -> Result<()> {
         let mut status_file = status_file;
+        // 1. 先把文件大小设置为 0
         status_file.set_len(0)?;
+        // 2. set_len 并不会调整指针的位置，因此光标的位置可能在意外的位置
+        // 所以需要 reset 到开始的地方
         status_file.rewind()?;
         let s = serde_json::to_vec(self)?;
         status_file.write_all(&s)?;
