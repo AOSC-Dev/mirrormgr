@@ -8,7 +8,7 @@ use oma_console::WRITER;
 
 use crate::{
     mgr::{Branches, DistroConfig, MirrorManager},
-    utils::{create_status, distro_and_custom_mirror, root, refresh},
+    utils::{create_status, distro_and_custom_mirrors, root, refresh},
     APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 
@@ -17,7 +17,7 @@ pub fn execute() -> Result<()> {
     let status = create_status(STATUS_FILE)?;
     let mut mm = MirrorManager::new(status);
 
-    let mm_info = distro_and_custom_mirror()?;
+    let mm_info = distro_and_custom_mirrors()?;
     let mirrors = mm_info.list_mirrors();
 
     let mut default = vec![];
@@ -48,15 +48,15 @@ pub fn execute() -> Result<()> {
         .map(|x| x.to_string())
         .collect::<Vec<_>>();
 
-    for (i, c) in mirrors.iter().enumerate() {
-        if enabled_mirrors.contains(&c.to_string()) {
+    for (i, (k, _)) in mirrors.iter().enumerate() {
+        if enabled_mirrors.contains(k) {
             default.push(i);
         }
     }
 
     let ans = MultiSelect::new(
         "Select to open or close mirror",
-        mirrors.iter().map(|x| x.as_ref()).collect(),
+        mirrors.iter().map(|(k, _)| k.as_ref()).collect(),
     )
     .with_help_message(
         "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.",

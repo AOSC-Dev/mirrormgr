@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::HashMap,
     fs::{self, File},
     io::{Read, Seek, Write},
@@ -12,7 +11,7 @@ use indexmap::{indexmap, IndexMap};
 use oma_console::{info, warn};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::fl;
+use crate::{fl, utils::url_strip};
 
 pub struct MirrorManager {
     status: MirrorStatus,
@@ -125,8 +124,13 @@ impl DistroConfig for CustomMirrors {
 }
 
 impl Mirrors {
-    pub fn list_mirrors(&self) -> Vec<&str> {
-        self.0.keys().map(|x| x.as_str()).collect()
+    pub fn list_mirrors(&self) -> HashMap<String, String> {
+        let mut res = HashMap::new();
+        for (k, v) in &self.0 {
+            res.insert(k.to_owned(), v.url.to_owned());
+        }
+
+        res
     }
 
     pub fn init_custom_mirrors(&mut self, c: CustomMirrors) {
@@ -351,12 +355,7 @@ impl MirrorManager {
 
         for (_, url) in &self.status.mirror {
             for branch in branches {
-                let url = if url.ends_with('/') {
-                    Cow::Borrowed(url)
-                } else {
-                    Cow::Owned(format!("{url}/"))
-                };
-
+                let url = url_strip(url);
                 let entry = format!("deb {url}debs {branch} {components}\n",);
                 s.push_str(&entry);
             }

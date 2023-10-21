@@ -1474,6 +1474,7 @@ dependencies = [
  "clap_complete",
  "dashmap",
  "futures",
+ "hex",
  "i18n-embed",
  "i18n-embed-fl",
  "indexmap 2.0.2",

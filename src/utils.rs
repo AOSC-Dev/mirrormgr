@@ -3,7 +3,7 @@ use rustix::process;
 use std::{
     fs::{self, File},
     path::Path,
-    process::{exit, Command},
+    process::{exit, Command}, borrow::Cow,
 };
 
 use crate::{
@@ -171,7 +171,7 @@ pub fn root() -> Result<()> {
     );
 }
 
-pub fn distro_and_custom_mirror() -> Result<Mirrors> {
+pub fn distro_and_custom_mirrors() -> Result<Mirrors> {
     let mut all_mirrors = Mirrors::from_path(MIRRORS_PATH)?;
     let custom = CustomMirrors::from_path(CUSTOM_MIRRORS);
 
@@ -180,4 +180,12 @@ pub fn distro_and_custom_mirror() -> Result<Mirrors> {
     }
 
     Ok(all_mirrors)
+}
+
+pub fn url_strip(url: &str) -> Cow<'_, str> {
+    if url.ends_with('/') {
+        Cow::Borrowed(url)
+    } else {
+        Cow::Owned(format!("{url}/"))
+    }
 }

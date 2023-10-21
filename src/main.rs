@@ -5,7 +5,7 @@ mod utils;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
-use subcmd::{add, menu, remove, reset, set};
+use subcmd::{add, menu, remove, reset, set, speedtest};
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";
@@ -13,6 +13,8 @@ const BRANCHES_PATH: &str = "/usr/share/distro-repository-data/branches.yml";
 const COMPONENTS_PATH: &str = "/usr/share/distro-repository/comps.yml";
 const APT_CONFIG: &str = "/etc/apt/sources.list";
 const CUSTOM_MIRRORS: &str = "/etc/apt-gen-list/custom_mirror.yml";
+const SPEEDTEST_FILE_CHECKSUM: &str =
+    "30e14955ebf1352266dc2ff8067e68104607e750abb9d3b36582b8af909fcb58";
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
@@ -33,6 +35,8 @@ enum MirrorMgrCommand {
     Reset,
     /// Mirrormgr menu
     Menu,
+    /// Speedtest mirrors
+    Speedtest,
 }
 
 #[derive(Parser, Debug)]
@@ -63,6 +67,7 @@ fn main() -> Result<()> {
             MirrorMgrCommand::Remove(a) => remove::execute(a),
             MirrorMgrCommand::Reset => reset::execute(),
             MirrorMgrCommand::Menu => menu::execute(),
+            MirrorMgrCommand::Speedtest => speedtest::execute(),
         }?;
     } else {
         menu::execute()?

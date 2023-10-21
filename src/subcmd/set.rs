@@ -1,6 +1,6 @@
 use crate::{
     mgr::{Branches, DistroConfig, MirrorManager},
-    utils::{create_status, refresh, root, distro_and_custom_mirror},
+    utils::{create_status, refresh, root, distro_and_custom_mirrors},
     Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE, fl,
 };
 use anyhow::Result;
@@ -13,7 +13,7 @@ pub fn execute(args: Set) -> Result<()> {
     let branches = Branches::from_path(BRANCHES_PATH)?;
 
     if let Some(mirror) = args.mirror {
-        let mirrors = distro_and_custom_mirror()?;
+        let mirrors = distro_and_custom_mirrors()?;
         mm.set_mirror(&mirror, &mirrors)?;
         info!("{}", fl!("set-mirror", mirror = mirror));
     }

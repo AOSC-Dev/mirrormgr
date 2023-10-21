@@ -26,6 +26,7 @@ ureq = "2.8"
 tokio = { version = "^1", features = ["rt-multi-thread", "rt", "time"], optional = true }
 oma-refresh = { version = "0.6", optional = true }
 oma-inquire = "0.1"
+hex = "0.4"
 
 # i18n
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"]}

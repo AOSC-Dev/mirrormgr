@@ -4,7 +4,7 @@ use oma_console::info;
 use crate::{
     fl,
     mgr::{Branches, Comps, DistroConfig, MirrorManager},
-    utils::{create_status, distro_and_custom_mirror, refresh, root},
+    utils::{create_status, distro_and_custom_mirrors, refresh, root},
     NormalArgs, APT_CONFIG, BRANCHES_PATH, COMPONENTS_PATH, STATUS_FILE,
 };
 
@@ -14,7 +14,7 @@ pub fn execute(args: NormalArgs) -> Result<()> {
     let mut mm = MirrorManager::new(status);
 
     if let Some(mirrors) = args.mirrors {
-        let mm_info = distro_and_custom_mirror()?;
+        let mm_info = distro_and_custom_mirrors()?;
         mm.add_mirrors(
             &mm_info,
             mirrors.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
