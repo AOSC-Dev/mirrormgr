@@ -8,11 +8,12 @@ use oma_console::WRITER;
 
 use crate::{
     mgr::{Branches, DistroConfig, MirrorManager, Mirrors},
-    utils::create_status,
+    utils::{create_status, root},
     APT_CONFIG, BRANCHES_PATH, MIRRORS_PATH, STATUS_FILE,
 };
 
 pub fn execute() -> Result<()> {
+    root()?;
     let status = create_status(STATUS_FILE)?;
     let mut mm = MirrorManager::new(status);
 

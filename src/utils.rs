@@ -1,8 +1,12 @@
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
+use rustix::process;
 use std::{
     fs::{self, File},
     path::Path,
+    process::{exit, Command},
 };
+
+use crate::fl;
 
 pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
     let status = status.as_ref();
@@ -25,7 +29,7 @@ pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
 
 #[cfg(any(feature = "oma-refresh", feature = "oma-refresh-aosc"))]
 pub fn refresh() -> Result<()> {
-    use std::sync::{Arc, atomic::Ordering};
+    use std::sync::{atomic::Ordering, Arc};
 
     use dashmap::DashMap;
     use indicatif::{MultiProgress, ProgressBar};
@@ -37,10 +41,8 @@ pub fn refresh() -> Result<()> {
         db::{OmaRefresh, RefreshEvent},
         DownloadEvent,
     };
-    use tokio::runtime::Builder;
     use std::sync::atomic::AtomicBool;
-
-    use crate::fl;
+    use tokio::runtime::Builder;
 
     let mb = Arc::new(MultiProgress::new());
     let pb_map: DashMap<usize, ProgressBar> = DashMap::new();
@@ -143,4 +145,24 @@ pub fn refresh() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn root() -> Result<()> {
+    if process::geteuid().is_root() {
+        return Ok(());
+    }
+
+    let args = std::env::args().collect::<Vec<_>>();
+
+    let out = Command::new("pkexec")
+        .args(args)
+        .spawn()
+        .and_then(|x| x.wait_with_output())
+        .map_err(|e| anyhow!(fl!("execute-pkexec-fail", e = e.to_string())))?;
+
+    exit(
+        out.status
+            .code()
+            .expect("Can not get pkexec oma exit status"),
+    );
 }
