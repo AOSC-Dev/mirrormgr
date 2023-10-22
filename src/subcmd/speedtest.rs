@@ -55,8 +55,11 @@ pub fn execute() -> Result<()> {
         .user_agent("AOSC mirrormgr")
         .build()?;
 
-    for (name, url) in map {
-        let score = get_score(&client, &name, &url);
+    for i in map {
+        let (name, info) = i.inner();
+        let name = name.to_owned();
+        let info = info.to_owned();
+        let score = get_score(&client, &name, info.url());
 
         match score {
             Ok(s) => {
@@ -83,7 +86,7 @@ pub fn execute() -> Result<()> {
 
     let all_score = all_score
         .sorted_unstable_by(|_, s1, _, s2| s2.partial_cmp(s1).unwrap_or(Ordering::Equal))
-        .map(|(x, y)| (x, format_speed(y)))
+        .map(|(x, y)| (x.to_owned(), format_speed(y)))
         .map(MirrorScore::from);
 
     let mut t = Table::new(all_score);

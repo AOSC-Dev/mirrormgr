@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::{Read, Seek, Write},
-    path::Path,
+    path::Path, fmt::Display,
 };
 
 use anyhow::{bail, Context, Result};
@@ -26,10 +26,36 @@ struct MirrorStatus {
     mirror: IndexMap<String, String>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct MirrorInfo {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MirrorInfo {
     url: String,
+    desc: String,
 }
+
+impl MirrorInfo {
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    pub fn desc(&self) -> &str {
+        &self.desc
+    }
+}
+
+pub struct Mirror<'a>(&'a str, &'a MirrorInfo);
+
+impl Mirror<'_> {
+    pub fn inner(&self) -> (&str, &MirrorInfo) {
+        (self.0, self.1)
+    }
+}
+
+impl Display for Mirror<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.1.desc())
+    }
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct BranchInfo {
@@ -101,6 +127,7 @@ impl DistroConfig for MirrorStatus {
         self.mirror.contains_key(s)
     }
 }
+
 impl DistroConfig for Branches {
     fn has(&self, s: &str) -> bool {
         self.0.contains_key(s)
@@ -125,10 +152,10 @@ impl DistroConfig for CustomMirrors {
 }
 
 impl Mirrors {
-    pub fn list_mirrors(&self) -> HashMap<String, String> {
-        let mut res = HashMap::new();
+    pub fn list_mirrors(&self) -> Vec<Mirror> {
+        let mut res = vec![];
         for (k, v) in &self.0 {
-            res.insert(k.to_owned(), v.url.to_owned());
+            res.push(Mirror(k.as_str(), v));
         }
 
         res
@@ -136,10 +163,17 @@ impl Mirrors {
 
     pub fn init_custom_mirrors(&mut self, c: CustomMirrors) -> Result<()> {
         for (k, v) in c.0 {
-            if !self.0.contains_key(&k) {
+            if self.0.contains_key(&k) {
                 bail!("Distro mirror file contains {k}.");
             }
-            self.0.insert(k, MirrorInfo { url: v });
+
+            self.0.insert(
+                k,
+                MirrorInfo {
+                    url: v.clone(),
+                    desc: format!("[Custom mirror] {v}"),
+                },
+            );
         }
 
         Ok(())

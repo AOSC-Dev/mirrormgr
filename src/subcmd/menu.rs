@@ -7,7 +7,7 @@ use inquire::{
 use oma_console::WRITER;
 
 use crate::{
-    mgr::{Branches, DistroConfig, MirrorManager},
+    mgr::{Branches, DistroConfig, Mirror, MirrorManager},
     utils::{create_status, distro_and_custom_mirrors, refresh, root},
     APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
@@ -22,7 +22,7 @@ pub fn execute() -> Result<()> {
 
     let mut default = vec![];
 
-    let formatter: MultiOptionFormatter<&str> = &|a| format!("Activating {} mirrors", a.len());
+    let formatter: MultiOptionFormatter<Mirror> = &|a| format!("Activating {} mirrors", a.len());
     let render_config = RenderConfig {
         selected_checkbox: Styled::new("✔").with_fg(Color::LightGreen),
         help_message: StyleSheet::empty().with_fg(Color::LightBlue),
@@ -48,31 +48,29 @@ pub fn execute() -> Result<()> {
         .map(|x| x.to_string())
         .collect::<Vec<_>>();
 
-    for (i, (k, _)) in mirrors.iter().enumerate() {
-        if enabled_mirrors.contains(k) {
+    for (i, x) in mirrors.iter().enumerate() {
+        if enabled_mirrors.contains(&x.inner().0.to_string()) {
             default.push(i);
         }
     }
 
-    let ans = MultiSelect::new(
-        "Select to open or close mirror",
-        mirrors.keys().map(|k| k.as_ref()).collect(),
-    )
-    .with_help_message(
-        "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.",
-    )
-    .with_formatter(formatter)
-    .with_default(&default)
-    .with_page_size(page_size as usize)
-    .with_render_config(render_config)
-    .prompt()
-    .ok();
+    let ans = MultiSelect::new("Select to open or close mirror", mirrors)
+        .with_help_message(
+            "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.",
+        )
+        .with_formatter(formatter)
+        .with_default(&default)
+        .with_page_size(page_size as usize)
+        .with_render_config(render_config)
+        .prompt()
+        .ok();
 
     if ans.is_none() {
         return Ok(());
     }
 
     let ans = ans.unwrap();
+    let ans = ans.iter().map(|x| x.inner().0).collect::<Vec<_>>();
 
     let mut remove_mirrors = vec![];
 
@@ -101,7 +99,7 @@ pub fn execute() -> Result<()> {
     let branches = Branches::from_path(BRANCHES_PATH)?;
     mm.apply_config(&branches, APT_CONFIG)?;
 
-    if !add_mirrors.is_empty() && !remove_mirrors.is_empty() {
+    if !add_mirrors.is_empty() || !remove_mirrors.is_empty() {
         refresh()?;
     }
 
