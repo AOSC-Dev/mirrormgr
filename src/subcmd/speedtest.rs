@@ -8,9 +8,9 @@ use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use indicatif::{ProgressBar, ProgressStyle};
 use oma_console::console;
+use reqwest::blocking::Client;
 use sha2::Digest;
 use sha2::Sha256;
-use ureq::Agent;
 
 use crate::utils::distro_and_custom_mirrors;
 use crate::SPEEDTEST_FILE_CHECKSUM;
@@ -29,11 +29,10 @@ pub fn execute() -> Result<()> {
     );
 
     let mut all_score = IndexMap::new();
-    let client = ureq::AgentBuilder::new()
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(10))
         .user_agent("AOSC mirrormgr")
-        .timeout_connect(Duration::from_secs(10))
-        .timeout(Duration::from_secs(60))
-        .build();
+        .build()?;
 
     for (name, url) in map {
         let score = get_score(&client, &name, &url);
@@ -60,15 +59,12 @@ pub fn execute() -> Result<()> {
     Ok(())
 }
 
-fn get_score(client: &Agent, name: &str, url: &str) -> Result<f32> {
+fn get_score(client: &Client, name: &str, url: &str) -> Result<f32> {
     let timer = Instant::now();
-    let mut buf = vec![];
-    client
+    let buf = client
         .get(&format!("{}.repotest", url_strip(url)))
-        .timeout(Duration::from_secs(10))
-        .call()?
-        .into_reader()
-        .read_to_end(&mut buf)?;
+        .send()?
+        .bytes()?;
 
     let mut hasher = Sha256::new();
     hasher.write_all(&buf)?;
