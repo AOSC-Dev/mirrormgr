@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io::Write;
 use std::time::Duration;
 use std::time::Instant;
@@ -11,11 +12,29 @@ use oma_console::console;
 use reqwest::blocking::Client;
 use sha2::Digest;
 use sha2::Sha256;
+use tabled::settings::Style;
+use tabled::Table;
+use tabled::Tabled;
 
 use crate::utils::distro_and_custom_mirrors;
 use crate::SPEEDTEST_FILE_CHECKSUM;
 
 const FILE_SIZE_KIB: f32 = 1024.0;
+
+#[derive(Tabled)]
+struct MirrorScore {
+    mirror_name: String,
+    score: String,
+}
+
+impl From<(String, String)> for MirrorScore {
+    fn from(value: (String, String)) -> Self {
+        MirrorScore {
+            mirror_name: value.0,
+            score: value.1,
+        }
+    }
+}
 
 pub fn execute() -> Result<()> {
     let mirrors = distro_and_custom_mirrors()?;
@@ -55,6 +74,17 @@ pub fn execute() -> Result<()> {
     }
 
     bar.finish_and_clear();
+
+    let all_score = all_score
+        .sorted_unstable_by(|_, s1, _, s2| s2.partial_cmp(s1).unwrap_or(Ordering::Equal))
+        .map(|(x, y)| (x, format_speed(y)))
+        .map(|x| MirrorScore::from(x));
+
+    let mut t = Table::new(all_score);
+    t.with(Style::psql());
+
+    println!();
+    println!("{t}");
 
     Ok(())
 }
