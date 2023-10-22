@@ -361,7 +361,7 @@ impl MirrorManager {
                     "deb {url}{} {branch} {components}\n",
                     match OsRelease::new()?.name.as_str() {
                         "AOSC OS" => "debs",
-                        "AOSC OS/Retro" => "debs-retro",
+                        "AOSC OS/Retro" | "Afterglow" => "debs-retro",
                         _ => "",
                     }
                 );
