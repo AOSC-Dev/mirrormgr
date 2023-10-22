@@ -25,7 +25,8 @@ pub fn execute() -> Result<()> {
     if f.metadata()?.len() == 0 {
         f.write_all(b"# AOSC OS mirrormgr custom mirror config file\n")?;
         f.write_all(b"# Usage: custom_mirror_name: URL\n")?;
-        f.write_all(b"# Like: MY_NAS: https://localhost/aosc\n\n")?;
+        f.write_all(b"# Like: MY_NAS: https://localhost/aosc\n")?;
+        f.write_all(b"# After, you can run `mirrormgr set --mirror MY_NAS' to use it.\n\n")?;
     }
 
     drop(f);
