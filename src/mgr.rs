@@ -205,13 +205,16 @@ impl MirrorStatus {
         false
     }
 
-    pub fn remove_mirror(&mut self, mirror: &str) -> bool {
+    pub fn remove_mirror(&mut self, mirror: &str) -> Result<bool> {
         if self.has(mirror) {
+            if self.mirror.len() == 1 {
+                bail!(fl!("no-delete-only-mirror"));
+            }
             self.mirror.remove(mirror);
-            return true;
+            return Ok(true);
         }
 
-        false
+        Ok(false)
     }
 
     pub fn add_component(&mut self, comp: String) -> bool {
@@ -316,13 +319,9 @@ impl MirrorManager {
     }
 
     pub fn remove_mirrors(&mut self, remove_mirrors: &[String]) -> Result<()> {
-        if self.status.mirror.len() <= 1 {
-            bail!(fl!("no-delete-only-mirror"));
-        }
-
         for m in remove_mirrors {
             info!("{}", fl!("remove-mirror", mirror = m.clone()));
-            let res = self.status.remove_mirror(m);
+            let res = self.status.remove_mirror(m)?;
 
             if !res {
                 warn!("{}", fl!("mirror-already-disabled", mirror = m.clone()));
@@ -336,7 +335,7 @@ impl MirrorManager {
         for c in add_comps {
             let has = comps.has(&c);
             if !has {
-                bail!(fl!("comp-not-found"))
+                bail!(fl!("comp-not-found", comp = c))
             }
 
             let res = self.status.add_component(c);
@@ -369,7 +368,7 @@ impl MirrorManager {
 
     pub fn set_branch(&mut self, branch: &str, branches: &Branches) -> Result<()> {
         if !branches.has(branch) {
-            bail!("branch-not-found")
+            bail!(fl!("branch-not-found"))
         }
 
         let res = self.status.set_branch(branch);

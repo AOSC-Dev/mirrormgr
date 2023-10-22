@@ -140,7 +140,6 @@ pub fn refresh() -> Result<()> {
 
 #[cfg(not(any(feature = "oma-refresh", feature = "oma-refresh-aosc")))]
 pub fn refresh() -> Result<()> {
-    use std::process::Command;
     let cmd = Command::new("apt").arg("update").output()?;
 
     let code = cmd.status.code();
