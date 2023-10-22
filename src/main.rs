@@ -5,7 +5,7 @@ mod utils;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
-use subcmd::{add, menu, remove, reset, set, speedtest, custom_mirrors};
+use subcmd::{add, custom_mirrors, menu, remove, reset, set, speedtest};
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";

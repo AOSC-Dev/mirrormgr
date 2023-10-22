@@ -1,7 +1,8 @@
 use crate::{
+    fl,
     mgr::{Branches, DistroConfig, MirrorManager},
-    utils::{create_status, refresh, root, distro_and_custom_mirrors},
-    Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE, fl,
+    utils::{create_status, distro_and_custom_mirrors, refresh, root},
+    Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 use anyhow::Result;
 use oma_console::info;

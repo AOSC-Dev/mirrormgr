@@ -8,7 +8,7 @@ use oma_console::WRITER;
 
 use crate::{
     mgr::{Branches, DistroConfig, MirrorManager},
-    utils::{create_status, distro_and_custom_mirrors, root, refresh},
+    utils::{create_status, distro_and_custom_mirrors, refresh, root},
     APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 

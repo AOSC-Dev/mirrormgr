@@ -2,9 +2,10 @@ use anyhow::Result;
 use oma_console::info;
 
 use crate::{
+    fl,
     mgr::{Branches, DistroConfig, MirrorManager},
     utils::{create_status, refresh, root},
-    APT_CONFIG, BRANCHES_PATH, STATUS_FILE, fl,
+    APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 
 pub fn execute() -> Result<()> {

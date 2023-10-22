@@ -269,9 +269,7 @@ impl MirrorManager {
                 bail!(fl!("mirror-not-found", mirror = m.to_string()));
             }
 
-            let res = self
-                .status
-                .add_mirror(m, entry.unwrap().url.clone());
+            let res = self.status.add_mirror(m, entry.unwrap().url.clone());
 
             info!("{}", fl!("set-mirror", mirror = m.to_string()));
 
