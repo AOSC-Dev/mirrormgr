@@ -23,7 +23,9 @@ const FILE_SIZE_KIB: f32 = 1024.0;
 
 #[derive(Tabled)]
 struct MirrorScore {
+    #[tabled(rename = "Mirror name")]
     mirror_name: String,
+    #[tabled(rename = "Score")]
     score: String,
 }
 
