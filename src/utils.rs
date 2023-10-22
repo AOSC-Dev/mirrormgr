@@ -1,9 +1,10 @@
 use anyhow::{anyhow, bail, Result};
 use rustix::process;
 use std::{
+    borrow::Cow,
     fs::{self, File},
     path::Path,
-    process::{exit, Command}, borrow::Cow,
+    process::{exit, Command},
 };
 
 use crate::{
@@ -176,7 +177,7 @@ pub fn distro_and_custom_mirrors() -> Result<Mirrors> {
     let custom = CustomMirrors::from_path(CUSTOM_MIRRORS);
 
     if let Ok(custom) = custom {
-        all_mirrors.init_custom_mirrors(custom);
+        all_mirrors.init_custom_mirrors(custom)?;
     }
 
     Ok(all_mirrors)

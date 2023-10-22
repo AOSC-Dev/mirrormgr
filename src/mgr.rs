@@ -134,10 +134,15 @@ impl Mirrors {
         res
     }
 
-    pub fn init_custom_mirrors(&mut self, c: CustomMirrors) {
+    pub fn init_custom_mirrors(&mut self, c: CustomMirrors) -> Result<()> {
         for (k, v) in c.0 {
+            if !self.0.contains_key(&k) {
+                bail!("Distro mirror file contains {k}.");
+            }
             self.0.insert(k, MirrorInfo { url: v });
         }
+
+        Ok(())
     }
 }
 
@@ -256,22 +261,22 @@ impl MirrorManager {
         Ok(())
     }
 
-    pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: Vec<&str>) -> Result<()> {
+    pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: &[&str]) -> Result<()> {
         for m in add_mirrors {
-            let entry = mirrors.0.get(m);
+            let entry = mirrors.0.get(m.to_owned());
 
             if entry.is_none() {
-                bail!(fl!("mirror-not-found", mirror = m));
+                bail!(fl!("mirror-not-found", mirror = m.to_string()));
             }
 
             let res = self
                 .status
-                .add_mirror(m.clone(), entry.unwrap().url.clone());
+                .add_mirror(m, entry.unwrap().url.clone());
 
-            info!("{}", fl!("set-mirror", mirror = m.clone()));
+            info!("{}", fl!("set-mirror", mirror = m.to_string()));
 
             if !res {
-                warn!("{}", fl!("mirror-already-enabled", mirror = m));
+                warn!("{}", fl!("mirror-already-enabled", mirror = m.to_string()));
             }
         }
 

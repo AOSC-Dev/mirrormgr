@@ -17,7 +17,7 @@ pub fn execute(args: NormalArgs) -> Result<()> {
         let mm_info = distro_and_custom_mirrors()?;
         mm.add_mirrors(
             &mm_info,
-            mirrors.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
+            &mirrors.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
         )?;
     }
 

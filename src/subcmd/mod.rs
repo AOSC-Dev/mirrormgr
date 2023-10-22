@@ -4,3 +4,4 @@ pub mod remove;
 pub mod reset;
 pub mod menu;
 pub mod speedtest;
+pub mod custom_mirrors;

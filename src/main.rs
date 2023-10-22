@@ -5,7 +5,7 @@ mod utils;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
-use subcmd::{add, menu, remove, reset, set, speedtest};
+use subcmd::{add, menu, remove, reset, set, speedtest, custom_mirrors};
 
 const STATUS_FILE: &str = "/var/lib/apt/gen/status.json";
 const MIRRORS_PATH: &str = "/usr/share/distro-repository-data/mirrors.yml";
@@ -37,6 +37,8 @@ enum MirrorMgrCommand {
     Menu,
     /// Speedtest mirrors
     Speedtest,
+    /// Edit custom mirror settings
+    CustomMirrors,
 }
 
 #[derive(Parser, Debug)]
@@ -68,6 +70,7 @@ fn main() -> Result<()> {
             MirrorMgrCommand::Reset => reset::execute(),
             MirrorMgrCommand::Menu => menu::execute(),
             MirrorMgrCommand::Speedtest => speedtest::execute(),
+            MirrorMgrCommand::CustomMirrors => custom_mirrors::execute(),
         }?;
     } else {
         menu::execute()?

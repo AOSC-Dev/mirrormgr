@@ -90,13 +90,20 @@ pub fn execute() -> Result<()> {
         }
     }
 
-    mm.add_mirrors(&mm_info, add_mirrors)?;
-    mm.remove_mirrors(&remove_mirrors)?;
+    if !add_mirrors.is_empty() {
+        mm.add_mirrors(&mm_info, &add_mirrors)?;
+    }
+
+    if !remove_mirrors.is_empty() {
+        mm.remove_mirrors(&remove_mirrors)?;
+    }
 
     let branches = Branches::from_path(BRANCHES_PATH)?;
     mm.apply_config(&branches, APT_CONFIG)?;
 
-    refresh()?;
+    if !add_mirrors.is_empty() && !remove_mirrors.is_empty() {
+        refresh()?;
+    }
 
     Ok(())
 }
