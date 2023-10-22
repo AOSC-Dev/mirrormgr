@@ -9,6 +9,7 @@ use anyhow::{bail, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
 use oma_console::{info, warn};
+use os_release::OsRelease;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{fl, utils::url_strip};
@@ -356,7 +357,14 @@ impl MirrorManager {
         for (_, url) in &self.status.mirror {
             for branch in branches {
                 let url = url_strip(url);
-                let entry = format!("deb {url}debs {branch} {components}\n",);
+                let entry = format!(
+                    "deb {url}{} {branch} {components}\n",
+                    match OsRelease::new()?.name.as_str() {
+                        "AOSC OS" => "debs",
+                        "AOSC OS/Retro" => "debs-retro",
+                        _ => "",
+                    }
+                );
                 s.push_str(&entry);
             }
         }
