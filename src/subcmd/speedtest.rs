@@ -69,7 +69,11 @@ pub fn execute() -> Result<()> {
                 all_score.insert(name, score);
             }
             Err(e) => {
-                bar.println(console::style(format!("{name}: {e}")).red().to_string());
+                bar.println(
+                    console::style(format!("{name}: {}", e.chain().last().unwrap()))
+                        .red()
+                        .to_string(),
+                );
             }
         }
         bar.inc(1);
