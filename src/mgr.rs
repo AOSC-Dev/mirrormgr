@@ -57,7 +57,7 @@ pub trait DistroConfig: DeserializeOwned {
     }
 
     fn from_str(s: &str) -> Result<Self> {
-        let s = serde_yaml::from_str(&s)?;
+        let s = serde_yaml::from_str(s)?;
 
         Ok(s)
     }
@@ -92,7 +92,7 @@ impl DistroConfig for MirrorStatus {
     }
 
     fn from_str(s: &str) -> Result<Self> {
-        let s = serde_json::from_str(&s)?;
+        let s = serde_json::from_str(s)?;
 
         Ok(s)
     }
@@ -158,7 +158,7 @@ impl MirrorStatus {
     }
 
     pub fn add_mirror(&mut self, mirror: &str, url: String) -> bool {
-        if !self.has(&mirror) {
+        if !self.has(mirror) {
             self.mirror.insert(mirror.to_owned(), url);
             return true;
         }
@@ -285,7 +285,7 @@ impl MirrorManager {
 
         for m in remove_mirrors {
             info!("{}", fl!("remove-mirror", mirror = m.clone()));
-            let res = self.status.remove_mirror(&m);
+            let res = self.status.remove_mirror(m);
 
             if !res {
                 warn!("{}", fl!("mirror-already-disabled", mirror = m.clone()));
@@ -331,7 +331,7 @@ impl MirrorManager {
     }
 
     pub fn set_branch(&mut self, branch: &str, branches: &Branches) -> Result<()> {
-        if !branches.has(&branch) {
+        if !branches.has(branch) {
             bail!("branch-not-found")
         }
 

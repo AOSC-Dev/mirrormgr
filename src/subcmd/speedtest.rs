@@ -84,7 +84,7 @@ pub fn execute() -> Result<()> {
     let all_score = all_score
         .sorted_unstable_by(|_, s1, _, s2| s2.partial_cmp(s1).unwrap_or(Ordering::Equal))
         .map(|(x, y)| (x, format_speed(y)))
-        .map(|x| MirrorScore::from(x));
+        .map(MirrorScore::from);
 
     let mut t = Table::new(all_score);
     t.with(Style::psql());
@@ -98,7 +98,7 @@ pub fn execute() -> Result<()> {
 fn get_score(client: &Client, name: &str, url: &str) -> Result<f32> {
     let timer = Instant::now();
     let buf = client
-        .get(&format!("{}.repotest", url_strip(url)))
+        .get(format!("{}.repotest", url_strip(url)))
         .send()?
         .bytes()?;
 

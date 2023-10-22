@@ -56,7 +56,7 @@ pub fn execute() -> Result<()> {
 
     let ans = MultiSelect::new(
         "Select to open or close mirror",
-        mirrors.iter().map(|(k, _)| k.as_ref()).collect(),
+        mirrors.keys().map(|k| k.as_ref()).collect(),
     )
     .with_help_message(
         "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.",
