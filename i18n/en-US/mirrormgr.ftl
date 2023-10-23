@@ -31,7 +31,7 @@ comp-already-enabled = Component {$comp} is already enabled.
 branch-not-found = Branch undefined or does not exist!
 branch-data-error = Cannot read branch list data!
 branch-already-enabled = Branch {$branch} is already enabled.
-mirror-not-found = Cannot find mirror: {$mirror}. Please use `apt-gen-list list-mirrors` to display a list of available mirrors, or use `apt-gen-list add-custom-mirror` to add a custom mirror.
+mirror-not-found = Cannot find mirror: {$mirror}. Please use `mirrormgr menu` to select a mirror on list of available mirrors, or use `mirrormgr custom-mirror` to add a custom mirror.
 mirror-already-enabled = Mirror {$mirror} is already enabled!
 mirror-already-disabled = Mirror {$mirror} is already disabled or does not exist！
 mirror-error = Failed to download test data from {$mirror}, please check your network connection!
@@ -44,7 +44,6 @@ no-delete-only-mirror = You only have one mirror left, refusing to remove!
 no-delete-only-comp = Refusing to remove essential component "main".
 status-file-not-found = Status file ({$path}) does not exist! please use root user to run apt-gen-list to create status file!
 status-file-read-error = Status file is corrupt or too old, please run it with the root user to use the correct format
-debs-path-in-url = A common mistake is to add '/debs' at the end of the repository URL (which is detected in your custom configuration), please try and remove this segment and try again.
 download-mirror-metadata-failed = Failed to download repository metadata from your custom mirror - it seems that your repository configuration is incorrect.
 execute-pkexec-fail = Failed to execute `pkexec': {$e}.
 
