@@ -1,11 +1,12 @@
 use std::{
     collections::HashMap,
+    fmt::Display,
     fs::{self, File},
     io::{Read, Seek, Write},
-    path::Path, fmt::Display,
+    path::Path,
 };
 
-use anyhow::{bail, Context, Result};
+use eyre::{bail, eyre, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
 use oma_console::{info, warn};
@@ -55,7 +56,6 @@ impl Display for Mirror<'_> {
         f.write_str(self.1.desc())
     }
 }
-
 
 #[derive(Serialize, Deserialize)]
 struct BranchInfo {
@@ -385,7 +385,7 @@ impl MirrorManager {
         let branches = &branches
             .0
             .get(&self.status.branch)
-            .context(fl!("branch-not-found"))?
+            .ok_or_else(|| eyre!(fl!("branch-not-found")))?
             .suites;
 
         let components = self.status.component.join(" ");

@@ -4,7 +4,7 @@ use crate::{
     utils::{create_status, distro_and_custom_mirrors, refresh, root},
     Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
-use anyhow::Result;
+use eyre::Result;
 use oma_console::info;
 
 pub fn execute(args: Set) -> Result<()> {

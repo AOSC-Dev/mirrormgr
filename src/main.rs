@@ -2,7 +2,7 @@ mod i18n;
 mod mgr;
 mod subcmd;
 mod utils;
-use anyhow::Result;
+use eyre::Result;
 use clap::{Parser, Subcommand};
 use i18n::I18N_LOADER;
 use subcmd::{add, custom_mirrors, menu, remove, reset, set, speedtest};

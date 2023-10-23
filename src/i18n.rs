@@ -1,4 +1,4 @@
-use anyhow::Result;
+use eyre::Result;
 use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester, LanguageLoader,

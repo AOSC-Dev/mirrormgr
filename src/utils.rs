@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use eyre::{anyhow, bail, Result};
 use rustix::process;
 use std::{
     borrow::Cow,

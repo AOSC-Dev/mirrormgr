@@ -1,4 +1,4 @@
-use anyhow::Result;
+use eyre::Result;
 use oma_console::info;
 
 use crate::{

@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 serde_yaml = "0.9"
-anyhow = "1.0"
+# anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 url = "2.2"
@@ -28,6 +28,7 @@ oma-refresh = { version = "0.6", optional = true }
 oma-inquire = "0.1"
 hex = "0.4"
 tabled = "0.14"
+eyre = "0.6"
 
 # i18n
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"]}

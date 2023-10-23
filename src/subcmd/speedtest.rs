@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use crate::fl;
 use crate::utils::url_strip;
-use anyhow::{anyhow, Result};
+use eyre::{anyhow, Result};
 use indexmap::IndexMap;
 use indicatif::{ProgressBar, ProgressStyle};
 use oma_console::console;
