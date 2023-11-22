@@ -5,7 +5,7 @@ use crate::{
     Set, APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 use eyre::Result;
-use oma_console::info;
+use tracing::info;
 
 pub fn execute(args: Set) -> Result<()> {
     root()?;

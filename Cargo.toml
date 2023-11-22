@@ -20,14 +20,16 @@ indexmap = { version = "2.0", features = ["serde"] }
 futures = "0.3"
 rustix = { version = "0.38", features = ["process"] }
 dashmap = { version = "5.5", optional = true }
-oma-console = "0.5"
+oma-console = { version = "0.9", features = ["print", "progress_bar_style"] }
 reqwest = { version = "0.11", features = ["blocking"] }
 tokio = { version = "^1", features = ["rt-multi-thread", "rt", "time"], optional = true }
-oma-refresh = { version = "0.6", optional = true }
+oma-refresh = { version = "0.11", optional = true }
 oma-inquire = "0.1"
 hex = "0.4"
 tabled = "0.14"
 eyre = "0.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # i18n
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"]}

@@ -43,7 +43,7 @@ pub fn refresh() -> Result<()> {
         writer::Writer,
     };
     use oma_refresh::{
-        db::{OmaRefresh, RefreshEvent},
+        db::{OmaRefreshBuilder, RefreshEvent},
         DownloadEvent,
     };
     use std::sync::atomic::AtomicBool;
@@ -55,7 +55,9 @@ pub fn refresh() -> Result<()> {
 
     let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
 
-    runtime.block_on(OmaRefresh::scan(None, true)?.start(
+    let refresh = OmaRefreshBuilder::default().build()?;
+
+    runtime.block_on(refresh.start(
         move |count, event, total| {
             match event {
                 RefreshEvent::ClosingTopic(topic_name) => {

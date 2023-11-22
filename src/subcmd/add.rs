@@ -1,5 +1,5 @@
 use eyre::Result;
-use oma_console::info;
+use tracing::info;
 
 use crate::{
     fl,

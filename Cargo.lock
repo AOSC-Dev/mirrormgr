@@ -1443,6 +1443,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata 0.1.10",
+]
+
+[[package]]
 name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1501,7 +1510,7 @@ dependencies = [
  "i18n-embed-fl",
  "indexmap 2.0.2",
  "indicatif",
- "oma-console",
+ "oma-console 0.9.0",
  "oma-inquire",
  "oma-refresh",
  "once_cell",
@@ -1515,6 +1524,8 @@ dependencies = [
  "sha2",
  "tabled",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
  "unic-langid",
  "url",
 ]
@@ -1590,6 +1601,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nu-ansi-term"
+version = "0.46.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a8165726e8236064dbb45459242600304b42a5ea24ee2948e18e023bf7ba84"
+dependencies = [
+ "overload",
+ "winapi",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1654,9 +1675,9 @@ dependencies = [
 
 [[package]]
 name = "oma-apt-sources-lists"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2fe7826fa9653da0e22df5a1062d9c7f5d47471bd5c39cf27b8e3c4af099a72"
+checksum = "38017b20b26d96eaa3389ca4834fd63ae3d54dfc1fb95b1bd571ebccd052ffd7"
 dependencies = [
  "err-derive",
 ]
@@ -1675,6 +1696,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "oma-console"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7325ff1f4a2e4c67605ed5905a154f870e07410bafb6094d2499e270d0da0aff"
+dependencies = [
+ "console",
+ "icu_segmenter",
+ "indicatif",
+ "once_cell",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "oma-debcontrol"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1685,21 +1720,21 @@ dependencies = [
 
 [[package]]
 name = "oma-fetch"
-version = "0.5.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9b05dc686892376468c3f0e75c069b3173fe71965e788e4ca0f4090a2cbe407"
+checksum = "ce564d895ba84facc155220f6c525692a425dfb69c57a11d6cd16b944d59c375"
 dependencies = [
  "async-compression",
  "derive_builder",
  "futures",
  "hex",
- "oma-console",
- "oma-utils 0.1.9",
+ "oma-utils 0.2.0",
  "reqwest",
  "serde",
  "sha2",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1720,19 +1755,19 @@ dependencies = [
 
 [[package]]
 name = "oma-refresh"
-version = "0.6.10"
+version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a096ee0c0962c0afa7be5a52786396df26f02acf65f663837cee8b282016bd49"
+checksum = "e9d9e7a49e3b1ff8e335818a9516fa62f265c692a3fbc08a94d32e68e9e6f016"
 dependencies = [
  "anyhow",
  "chrono",
+ "derive_builder",
  "futures",
  "oma-apt-sources-lists",
- "oma-console",
  "oma-debcontrol",
  "oma-fetch",
  "oma-topics",
- "oma-utils 0.2.0",
+ "oma-utils 0.5.2",
  "once_cell",
  "reqwest",
  "sequoia-openpgp",
@@ -1740,37 +1775,24 @@ dependencies = [
  "serde_yaml",
  "thiserror",
  "tokio",
+ "tracing",
  "url",
 ]
 
 [[package]]
 name = "oma-topics"
-version = "0.3.3"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45f723205b9d1ee5f1128e6b02f0ba4b95e9481c96d3cb0d40d55733eaee7add"
+checksum = "0cc4ddede3ef559cda209beef103b69d2994034ea87aa2e0fd0f1d311d291fd4"
 dependencies = [
  "futures",
  "indexmap 2.0.2",
- "oma-console",
- "once_cell",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
-]
-
-[[package]]
-name = "oma-utils"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "384756b0e14c6b083b6ad04618e56d1e000627a943f267a685ffc178c1997580"
-dependencies = [
- "oma-console",
- "once_cell",
- "os-release",
- "thiserror",
- "url-escape",
+ "tracing",
 ]
 
 [[package]]
@@ -1779,10 +1801,23 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b20e9a2e8003d5c94c479280968d2630bc9b69335e00c590fb044cb95e9e1fba"
 dependencies = [
- "oma-console",
+ "oma-console 0.5.0",
  "once_cell",
  "os-release",
  "thiserror",
+ "url-escape",
+]
+
+[[package]]
+name = "oma-utils"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91d8490c0a82c12766266403a8233db7ffa91adb3c9fd3e416dfac8e44b018bf"
+dependencies = [
+ "once_cell",
+ "os-release",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -1843,6 +1878,12 @@ checksum = "82f29ae2f71b53ec19cc23385f8e4f3d90975195aa3d09171ba3bef7159bec27"
 dependencies = [
  "lazy_static",
 ]
+
+[[package]]
+name = "overload"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "papergrid"
@@ -2080,8 +2121,17 @@ checksum = "380b951a9c5e80ddfd6136919eef32310721aa4aacd4889a8d39124b026ab343"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata",
+ "regex-automata 0.4.3",
  "regex-syntax 0.8.2",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+dependencies = [
+ "regex-syntax 0.6.29",
 ]
 
 [[package]]
@@ -2384,6 +2434,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sharded-slab"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "shlex"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2621,6 +2680,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "thread_local"
+version = "1.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+]
+
+[[package]]
 name = "tiny-keccak"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2749,7 +2818,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
 dependencies = [
  "pin-project-lite",
+ "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-attributes"
+version = "0.1.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
@@ -2759,6 +2840,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
+ "valuable",
+]
+
+[[package]]
+name = "tracing-log"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
+dependencies = [
+ "log",
+ "once_cell",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-subscriber"
+version = "0.3.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad0f048c97dbd9faa9b7df56362b8ebcaa52adb06b498c050d2f4e32f90a7a8b"
+dependencies = [
+ "matchers",
+ "nu-ansi-term",
+ "once_cell",
+ "regex",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
 ]
 
 [[package]]
@@ -2877,6 +2988,12 @@ name = "utf8parse"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
+
+[[package]]
+name = "valuable"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
 name = "vcpkg"

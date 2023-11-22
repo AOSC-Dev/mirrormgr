@@ -9,9 +9,9 @@ use std::{
 use eyre::{bail, eyre, Context, Result};
 
 use indexmap::{indexmap, IndexMap};
-use oma_console::{info, warn};
 use os_release::OsRelease;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::{info, warn};
 
 use crate::{fl, utils::url_strip};
 
