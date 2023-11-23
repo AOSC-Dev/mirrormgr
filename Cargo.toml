@@ -38,7 +38,7 @@ rust-embed = "^8"
 unic-langid = "0.9"
 
 [build-dependencies]
-clap = "4.0"
+clap = { version = "4.0", features = ["derive"] }
 clap_complete = "4.0"
 os-release = "0.1"
 

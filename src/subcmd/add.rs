@@ -2,10 +2,11 @@ use eyre::Result;
 use tracing::info;
 
 use crate::{
+    args::NormalArgs,
     fl,
     mgr::{Branches, Comps, DistroConfig, MirrorManager},
     utils::{create_status, distro_and_custom_mirrors, refresh, root},
-    NormalArgs, APT_CONFIG, BRANCHES_PATH, COMPONENTS_PATH, STATUS_FILE,
+    APT_CONFIG, BRANCHES_PATH, COMPONENTS_PATH, STATUS_FILE,
 };
 
 pub fn execute(args: NormalArgs) -> Result<()> {

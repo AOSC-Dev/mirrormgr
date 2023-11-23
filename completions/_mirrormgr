@@ -1,0 +1,248 @@
+#compdef mirrormgr
+
+autoload -U is-at-least
+
+_mirrormgr() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" \
+'-d[]' \
+'--debug[]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_mirrormgr_commands" \
+"*::: :->mirrormgr" \
+&& ret=0
+    case $state in
+    (mirrormgr)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mirrormgr-command-$line[1]:"
+        case $line[1] in
+            (set)
+_arguments "${_arguments_options[@]}" \
+'-m+[]:MIRROR: ' \
+'--mirror=[]:MIRROR: ' \
+'-b+[]:BRANCH: ' \
+'--branch=[]:BRANCH: ' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" \
+'*-m+[]:MIRRORS: ' \
+'*--mirrors=[]:MIRRORS: ' \
+'*-c+[]:COMPONENTS: ' \
+'*--components=[]:COMPONENTS: ' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" \
+'*-m+[]:MIRRORS: ' \
+'*--mirrors=[]:MIRRORS: ' \
+'*-c+[]:COMPONENTS: ' \
+'*--components=[]:COMPONENTS: ' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(reset)
+_arguments "${_arguments_options[@]}" \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(menu)
+_arguments "${_arguments_options[@]}" \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(speedtest)
+_arguments "${_arguments_options[@]}" \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(custom-mirrors)
+_arguments "${_arguments_options[@]}" \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" \
+":: :_mirrormgr__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mirrormgr-help-command-$line[1]:"
+        case $line[1] in
+            (set)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(reset)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(menu)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(speedtest)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(custom-mirrors)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_mirrormgr_commands] )) ||
+_mirrormgr_commands() {
+    local commands; commands=(
+'set:Set APT repository mirror, branch and components' \
+'add:Add APT repository mirror, branch and components' \
+'remove:Remove APT repository mirror, branch and components' \
+'reset:Reset all APT repositories mirror settings' \
+'menu:Mirrormgr menu' \
+'speedtest:Speedtest mirrors' \
+'custom-mirrors:Edit custom mirror settings' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mirrormgr commands' commands "$@"
+}
+(( $+functions[_mirrormgr__add_commands] )) ||
+_mirrormgr__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr add commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__add_commands] )) ||
+_mirrormgr__help__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help add commands' commands "$@"
+}
+(( $+functions[_mirrormgr__custom-mirrors_commands] )) ||
+_mirrormgr__custom-mirrors_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr custom-mirrors commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__custom-mirrors_commands] )) ||
+_mirrormgr__help__custom-mirrors_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help custom-mirrors commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help_commands] )) ||
+_mirrormgr__help_commands() {
+    local commands; commands=(
+'set:Set APT repository mirror, branch and components' \
+'add:Add APT repository mirror, branch and components' \
+'remove:Remove APT repository mirror, branch and components' \
+'reset:Reset all APT repositories mirror settings' \
+'menu:Mirrormgr menu' \
+'speedtest:Speedtest mirrors' \
+'custom-mirrors:Edit custom mirror settings' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mirrormgr help commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__help_commands] )) ||
+_mirrormgr__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help help commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__menu_commands] )) ||
+_mirrormgr__help__menu_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help menu commands' commands "$@"
+}
+(( $+functions[_mirrormgr__menu_commands] )) ||
+_mirrormgr__menu_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr menu commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__remove_commands] )) ||
+_mirrormgr__help__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help remove commands' commands "$@"
+}
+(( $+functions[_mirrormgr__remove_commands] )) ||
+_mirrormgr__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr remove commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__reset_commands] )) ||
+_mirrormgr__help__reset_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help reset commands' commands "$@"
+}
+(( $+functions[_mirrormgr__reset_commands] )) ||
+_mirrormgr__reset_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr reset commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__set_commands] )) ||
+_mirrormgr__help__set_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help set commands' commands "$@"
+}
+(( $+functions[_mirrormgr__set_commands] )) ||
+_mirrormgr__set_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr set commands' commands "$@"
+}
+(( $+functions[_mirrormgr__help__speedtest_commands] )) ||
+_mirrormgr__help__speedtest_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr help speedtest commands' commands "$@"
+}
+(( $+functions[_mirrormgr__speedtest_commands] )) ||
+_mirrormgr__speedtest_commands() {
+    local commands; commands=()
+    _describe -t commands 'mirrormgr speedtest commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_mirrormgr" ]; then
+    _mirrormgr "$@"
+else
+    compdef _mirrormgr mirrormgr
+fi

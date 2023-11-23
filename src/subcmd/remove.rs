@@ -5,7 +5,7 @@ use crate::{
     fl,
     mgr::{Branches, DistroConfig, MirrorManager},
     utils::{create_status, refresh, root},
-    NormalArgs, APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
+    APT_CONFIG, BRANCHES_PATH, STATUS_FILE, args::NormalArgs,
 };
 
 pub fn execute(args: NormalArgs) -> Result<()> {
