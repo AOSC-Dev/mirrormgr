@@ -1,8 +1,9 @@
 use crate::{
+    args::Set,
     fl,
     mgr::{Branches, DistroConfig, MirrorManager},
     utils::{create_status, distro_and_custom_mirrors, refresh, root},
-    APT_CONFIG, BRANCHES_PATH, STATUS_FILE, args::Set,
+    APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
 };
 use eyre::Result;
 use tracing::info;

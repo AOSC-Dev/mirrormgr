@@ -1,6 +1,6 @@
+use clap::CommandFactory;
 use clap_complete::{generate_to, Shell};
 use std::env;
-use clap::CommandFactory;
 
 include!("./src/args.rs");
 
