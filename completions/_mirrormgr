@@ -32,30 +32,30 @@ _mirrormgr() {
         case $line[1] in
             (set)
 _arguments "${_arguments_options[@]}" \
-'-m+[]:MIRROR: ' \
-'--mirror=[]:MIRROR: ' \
-'-b+[]:BRANCH: ' \
-'--branch=[]:BRANCH: ' \
+'-m+[Mirror name, e.g\: origin]:MIRROR: ' \
+'--mirror=[Mirror name, e.g\: origin]:MIRROR: ' \
+'-b+[Branch name, e.g\: stable]:BRANCH: ' \
+'--branch=[Branch name, e.g\: stable]:BRANCH: ' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (add)
 _arguments "${_arguments_options[@]}" \
-'*-m+[]:MIRRORS: ' \
-'*--mirrors=[]:MIRRORS: ' \
-'*-c+[]:COMPONENTS: ' \
-'*--components=[]:COMPONENTS: ' \
+'*-m+[Mirror(s) name, e.g\: origin]:MIRRORS: ' \
+'*--mirrors=[Mirror(s) name, e.g\: origin]:MIRRORS: ' \
+'*-c+[component name, e.g\: main]:COMPONENTS: ' \
+'*--components=[component name, e.g\: main]:COMPONENTS: ' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (remove)
 _arguments "${_arguments_options[@]}" \
-'*-m+[]:MIRRORS: ' \
-'*--mirrors=[]:MIRRORS: ' \
-'*-c+[]:COMPONENTS: ' \
-'*--components=[]:COMPONENTS: ' \
+'*-m+[Mirror(s) name, e.g\: origin]:MIRRORS: ' \
+'*--mirrors=[Mirror(s) name, e.g\: origin]:MIRRORS: ' \
+'*-c+[component name, e.g\: main]:COMPONENTS: ' \
+'*--components=[component name, e.g\: main]:COMPONENTS: ' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0

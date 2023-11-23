@@ -30,8 +30,10 @@ pub enum MirrorMgrCommand {
 #[derive(Parser, Debug)]
 #[group(required = true)]
 pub struct Set {
+    /// Mirror name, e.g: origin
     #[clap(short, long)]
     pub mirror: Option<String>,
+    /// Branch name, e.g: stable
     #[clap(short, long)]
     pub branch: Option<String>,
 }
@@ -39,8 +41,10 @@ pub struct Set {
 #[derive(Parser, Debug)]
 #[group(required = true)]
 pub struct NormalArgs {
+    /// Mirror(s) name, e.g: origin
     #[clap(short, long)]
     pub mirrors: Option<Vec<String>>,
+    /// component name, e.g: main
     #[clap(short, long)]
     pub components: Option<Vec<String>>,
 }
