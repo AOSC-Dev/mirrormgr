@@ -2287,6 +2287,8 @@ dependencies = [
  "memsec",
  "nettle",
  "once_cell",
+ "openssl",
+ "openssl-sys",
  "rand",
  "regex",
  "regex-syntax 0.8.2",
