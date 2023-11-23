@@ -39,8 +39,9 @@ pub fn refresh() -> Result<()> {
     use dashmap::DashMap;
     use indicatif::{MultiProgress, ProgressBar};
     use oma_console::{
+        console,
         pb::{oma_spinner, oma_style_pb},
-        writer::Writer,
+        writer::{self, Writer},
     };
     use oma_refresh::{
         db::{OmaRefreshBuilder, RefreshEvent},
@@ -65,10 +66,13 @@ pub fn refresh() -> Result<()> {
                 }
                 RefreshEvent::DownloadEvent(event) => match event {
                     DownloadEvent::ChecksumMismatchRetry { filename, times } => {
-                        mb.println(format!(
-                            "{filename} checksum failed, retrying {times} times"
-                        ))
-                        .unwrap();
+                        writer::bar_writeln(
+                            |s| {
+                                mb.println(s).ok();
+                            },
+                            &console::style("ERROR").red().bold().to_string(),
+                            &format!("{filename} checksum failed, retrying {times} times"),
+                        )
                     }
                     DownloadEvent::GlobalProgressSet(size) => {
                         if let Some(pb) = pb_map.get(&0) {
@@ -102,9 +106,13 @@ pub fn refresh() -> Result<()> {
                         let pb = pb_map.get(&(count + 1)).unwrap();
                         pb.inc(size);
                     }
-                    DownloadEvent::CanNotGetSourceNextUrl(e) => {
-                        mb.println(format!("Error: {e}")).unwrap();
-                    }
+                    DownloadEvent::CanNotGetSourceNextUrl(e) => writer::bar_writeln(
+                        |s| {
+                            mb.println(s).ok();
+                        },
+                        &console::style("ERROR").red().bold().to_string(),
+                        &e,
+                    ),
                     DownloadEvent::Done(_) => {
                         return;
                     }
