@@ -1,6 +1,6 @@
 [package]
 name = "mirrormgr"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["eatradish <sakiiily@aosc.io>", "liushuyu <liushuyu@aosc.io>"]
 edition = "2021"
 
@@ -23,7 +23,7 @@ dashmap = { version = "5.5", optional = true }
 oma-console = { version = "0.9", features = ["print", "progress_bar_style"] }
 reqwest = { version = "0.11", features = ["blocking"] }
 tokio = { version = "^1", features = ["rt-multi-thread", "rt", "time"], optional = true }
-oma-refresh = { version = "0.11", optional = true }
+oma-refresh = { version = "0.11", optional = true, default-features = false }
 oma-inquire = "0.1"
 hex = "0.4"
 tabled = "0.14"
