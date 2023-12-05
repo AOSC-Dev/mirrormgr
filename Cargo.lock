@@ -1486,6 +1486,7 @@ dependencies = [
  "oma-console 0.9.0",
  "oma-inquire",
  "oma-refresh",
+ "oma-topics",
  "once_cell",
  "os-release",
  "reqwest",

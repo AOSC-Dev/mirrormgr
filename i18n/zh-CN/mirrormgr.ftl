@@ -49,4 +49,4 @@ download-mirror-metadata-failed = 从自定义软件源元数据下载失败：�
 execute-pkexec-fail = 无法执行 `pkexec' 命令：{$e}。
 
 # file content
-generated = # 本文件使用 apt-gen-list 生成，请勿编辑！
+generated = # 本文件使用 mirrormgr 生成，请勿编辑！
