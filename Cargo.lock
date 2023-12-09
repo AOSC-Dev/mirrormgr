@@ -18,6 +18,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "ahash"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -25,6 +37,12 @@ checksum = "b2969dcb958b36655471fc61f7e416fa76033bdd4bfed0678d8fee1e2d07a1f0"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "allocator-api2"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
 name = "android-tzdata"
@@ -899,6 +917,9 @@ name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+dependencies = [
+ "allocator-api2",
+]
 
 [[package]]
 name = "heck"
@@ -1471,7 +1492,7 @@ dependencies = [
 
 [[package]]
 name = "mirrormgr"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1728,9 +1749,9 @@ dependencies = [
 
 [[package]]
 name = "oma-refresh"
-version = "0.11.4"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9d9e7a49e3b1ff8e335818a9516fa62f265c692a3fbc08a94d32e68e9e6f016"
+checksum = "779f380c99525cb8b545c955884f3c6987a3f2c4f1a0e146b20eaf70d11fb56d"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1740,12 +1761,14 @@ dependencies = [
  "oma-debcontrol",
  "oma-fetch",
  "oma-topics",
- "oma-utils 0.5.2",
+ "oma-utils 0.6.0",
  "once_cell",
  "reqwest",
  "sequoia-openpgp",
  "serde",
  "serde_yaml",
+ "small-map",
+ "smallvec",
  "thiserror",
  "tokio",
  "tracing",
@@ -1783,9 +1806,9 @@ dependencies = [
 
 [[package]]
 name = "oma-utils"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91d8490c0a82c12766266403a8233db7ffa91adb3c9fd3e416dfac8e44b018bf"
+checksum = "900c3605b76e3ddfbbed3d79f0e279686b40cb0ddc1856aa55ca98caa97dac96"
 dependencies = [
  "once_cell",
  "os-release",
@@ -2452,6 +2475,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "small-map"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f6bc8704b966e50b4fc057788d91533d3296594d4f68701da95f2c2289c808e"
+dependencies = [
+ "ahash",
+ "hashbrown",
+ "rustc-hash",
 ]
 
 [[package]]
@@ -3369,6 +3403,26 @@ dependencies = [
  "quote",
  "syn 2.0.39",
  "synstructure 0.13.0",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.7.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "306dca4455518f1f31635ec308b6b3e4eb1b11758cefafc782827d0aa7acb5c7"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be912bf68235a88fbefd1b73415cb218405958d1655b2ece9035a19920bdf6ba"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
 ]
 
 [[package]]
