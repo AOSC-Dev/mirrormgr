@@ -1,5 +1,7 @@
-use dialoguer::{theme::ColorfulTheme, Sort};
-use eyre::{eyre, Result};
+use std::process::exit;
+
+use dialoguer::{console::Term, theme::ColorfulTheme, Sort};
+use eyre::Result;
 use tracing::info;
 
 use crate::{
@@ -15,6 +17,12 @@ pub fn execute() -> Result<()> {
     let mut mm = MirrorManager::new(status_file);
     let branches = Branches::from_path(BRANCHES_PATH)?;
 
+    ctrlc::set_handler(|| {
+        let term = Term::stdout();
+        term.show_cursor().ok();
+        exit(1);
+    })?;
+
     let enabled_mirrors = mm
         .list_enabled_mirrors()
         .iter()
@@ -24,8 +32,7 @@ pub fn execute() -> Result<()> {
     let sorted = Sort::with_theme(&ColorfulTheme::default())
         .with_prompt("Order enabled mirrors")
         .items(&enabled_mirrors)
-        .interact()
-        .map_err(|_| eyre!(""))?;
+        .interact()?;
 
     let mut res = vec![];
 

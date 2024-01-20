@@ -198,7 +198,8 @@ impl MirrorStatus {
 
     pub fn add_mirror(&mut self, mirror: &str, url: String) -> bool {
         if !self.has(mirror) {
-            self.mirror.insert(mirror.to_owned(), url);
+            let (index, _) = self.mirror.insert_full(mirror.to_owned(), url);
+            self.mirror.swap_indices(0, index);
             return true;
         }
 
