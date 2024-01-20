@@ -27,7 +27,7 @@ oma-refresh = { version = "0.12", optional = true, default-features = false }
 oma-topics = { version = "0.7", optional = true }
 oma-inquire = "0.1"
 hex = "0.4"
-tabled = "0.14"
+tabled = "0.15"
 eyre = "0.6"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
