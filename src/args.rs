@@ -25,6 +25,8 @@ pub enum MirrorMgrCommand {
     Speedtest,
     /// Edit custom mirror settings
     CustomMirrors,
+    /// Sort Mirror settings
+    SortMirrors,
 }
 
 #[derive(Parser, Debug)]

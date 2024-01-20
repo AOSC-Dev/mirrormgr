@@ -205,6 +205,16 @@ impl MirrorStatus {
         false
     }
 
+    pub fn reorder_mirrors(&mut self, mirrors: Vec<String>) {
+        let mut res = IndexMap::new();
+        for i in mirrors {
+            let v = self.mirror.get(&i).unwrap();
+            res.insert(i, v.to_string());
+        }
+
+        self.mirror = res;
+    }
+
     pub fn remove_mirror(&mut self, mirror: &str) -> Result<bool> {
         if self.has(mirror) {
             if self.mirror.len() == 1 {
@@ -296,6 +306,10 @@ impl MirrorManager {
             .set_mirror(set_mirror, entry.unwrap().url.clone());
 
         Ok(())
+    }
+
+    pub fn reorder_mirrors(&mut self, mirrors: Vec<String>) {
+        self.status.reorder_mirrors(mirrors);
     }
 
     pub fn add_mirrors(&mut self, mirrors: &Mirrors, add_mirrors: &[&str]) -> Result<()> {

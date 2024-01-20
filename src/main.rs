@@ -8,7 +8,7 @@ use clap::Parser;
 use eyre::Result;
 use i18n::I18N_LOADER;
 use oma_console::OmaLayer;
-use subcmd::{add, custom_mirrors, menu, remove, reset, set, speedtest};
+use subcmd::{add, custom_mirrors, menu, remove, reset, set, sort_mirrors, speedtest};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
@@ -35,6 +35,7 @@ fn main() -> Result<()> {
             MirrorMgrCommand::Menu => menu::execute(),
             MirrorMgrCommand::Speedtest => speedtest::execute(),
             MirrorMgrCommand::CustomMirrors => custom_mirrors::execute(),
+            MirrorMgrCommand::SortMirrors => sort_mirrors::execute(),
         }?;
     } else {
         menu::execute()?
