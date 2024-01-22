@@ -24,6 +24,9 @@ run-refresh = Refreshing local mirror metadata ...
 trying-get-mirror = Trying get mirror ...
 fastest-mirror = Fastest mirror: {$mirror}: {$speed}
 order-mirror = Order enabled mirrors
+activating-count-mirrors = "Activating {$count} mirrors"
+select-open-or-close-mirrors = ""Select to open or close mirror"
+help-message = "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort."
 
 # error messages
 comp-not-enabled = Component {$comp} is not enabled or does not exist.

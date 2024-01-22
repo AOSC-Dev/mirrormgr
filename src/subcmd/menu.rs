@@ -7,6 +7,7 @@ use inquire::{
 use oma_console::WRITER;
 
 use crate::{
+    fl,
     mgr::{Branches, DistroConfig, Mirror, MirrorManager},
     utils::{create_status, distro_and_custom_mirrors, refresh, root},
     APT_CONFIG, BRANCHES_PATH, STATUS_FILE,
@@ -22,7 +23,8 @@ pub fn execute() -> Result<()> {
 
     let mut default = vec![];
 
-    let formatter: MultiOptionFormatter<Mirror> = &|a| format!("Activating {} mirrors", a.len());
+    let formatter: MultiOptionFormatter<Mirror> =
+        &|a| fl!("activating-count-mirrors", count = a.len());
     let render_config = RenderConfig {
         selected_checkbox: Styled::new("✔").with_fg(Color::LightGreen),
         help_message: StyleSheet::empty().with_fg(Color::LightBlue),
@@ -54,10 +56,8 @@ pub fn execute() -> Result<()> {
         }
     }
 
-    let ans = MultiSelect::new("Select to open or close mirror", mirrors)
-        .with_help_message(
-            "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.",
-        )
+    let ans = MultiSelect::new(&fl!("select-open-or-close-mirrors"), mirrors)
+        .with_help_message(&fl!("help-message"))
         .with_formatter(formatter)
         .with_default(&default)
         .with_page_size(page_size as usize)

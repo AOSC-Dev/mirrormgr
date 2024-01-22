@@ -24,6 +24,9 @@ run-refresh = 正在刷新源 ...
 trying-get-mirror = 正在尝试访问源 ...
 fastest-mirror = 最快的源：{$mirror}: {$speed}
 order-mirror = 排序使能源
+activating-count-mirrors = "Activating {$count} mirrors"
+select-open-or-close-mirrors = ""Select to open or close mirror"
+help-message = "Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort."
 
 # error messages
 comp-not-enabled = 组件 {$comp} 未启用或不存在。
