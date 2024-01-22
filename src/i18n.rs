@@ -33,7 +33,13 @@ fn load_i18n() -> Result<FluentLanguageLoader> {
         .iter()
         .chain(fallback_language.iter())
         .collect();
+
     language_loader.load_languages(&Localizations, &languages)?;
+
+    // Windows Terminal doesn't support bidirectional (BiDi) text, and renders the isolate characters incorrectly.
+    // This is a temporary workaround for https://github.com/microsoft/terminal/issues/16574
+    // TODO: this might break BiDi text, though we don't support any writing system depends on that.
+    language_loader.set_use_isolating(false);
 
     Ok(language_loader)
 }
