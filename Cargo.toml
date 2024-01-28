@@ -18,7 +18,9 @@ sha2 = "0.10"
 os-release = "0.1"
 indexmap = { version = "2.0", features = ["serde"] }
 futures = "0.3"
-rustix = { version = "0.38", features = ["process"] }
+# FIXME: 0.38.30 failed to build on loongarch64
+# See: https://github.com/rust-lang/libc/pull/3551
+rustix = { version = "=0.38.28", features = ["process"] }
 dashmap = { version = "5.5", optional = true }
 oma-console = { version = "0.9", features = ["print", "progress_bar_style"] }
 reqwest = { version = "0.11", features = ["blocking"] }
