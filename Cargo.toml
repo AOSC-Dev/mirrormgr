@@ -17,7 +17,6 @@ indicatif = "0.17"
 sha2 = "0.10"
 os-release = "0.1"
 indexmap = { version = "2.0", features = ["serde"] }
-futures = "0.3"
 # FIXME: 0.38.30 failed to build on loongarch64
 # See: https://github.com/rust-lang/libc/pull/3551
 rustix = { version = "=0.38.28", features = ["process"] }

@@ -1523,7 +1523,6 @@ dependencies = [
  "dashmap",
  "dialoguer",
  "eyre",
- "futures",
  "hex",
  "i18n-embed",
  "i18n-embed-fl",
