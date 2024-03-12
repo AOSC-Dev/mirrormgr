@@ -72,7 +72,7 @@ pub struct Mirrors(HashMap<String, MirrorInfo>);
 pub struct Comps(HashMap<String, String>);
 
 #[derive(Serialize, Deserialize)]
-pub struct CustomMirrors(HashMap<String, String>);
+pub struct CustomMirrors(pub HashMap<String, String>);
 
 pub trait DistroConfig: DeserializeOwned {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {

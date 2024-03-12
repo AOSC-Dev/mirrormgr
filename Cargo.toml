@@ -17,9 +17,7 @@ indicatif = "0.17"
 sha2 = "0.10"
 os-release = "0.1"
 indexmap = { version = "2.0", features = ["serde"] }
-# FIXME: 0.38.30 failed to build on loongarch64
-# See: https://github.com/rust-lang/libc/pull/3551
-rustix = { version = "=0.38.28", features = ["process"] }
+rustix = { version = "0.38", features = ["process"] }
 dashmap = { version = "5.5", optional = true }
 oma-console = { version = "0.9", features = ["print", "progress_bar_style"] }
 reqwest = { version = "0.11", default-features = false, features = ["blocking"] }
@@ -37,7 +35,7 @@ ctrlc = "3.4"
 
 # i18n
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"]}
-i18n-embed-fl = "0.7"
+i18n-embed-fl = "0.8"
 rust-embed = "^8"
 unic-langid = "0.9"
 
