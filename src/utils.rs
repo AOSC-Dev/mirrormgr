@@ -48,6 +48,7 @@ pub fn refresh() -> Result<()> {
         DownloadEvent,
     };
     use oma_topics::TopicManager;
+    use oma_utils::dpkg::dpkg_arch;
     use std::sync::atomic::AtomicBool;
     use tokio::runtime::Builder;
 
@@ -61,7 +62,7 @@ pub fn refresh() -> Result<()> {
 
     let pb = mb.add(ProgressBar::new_spinner());
 
-    let mut tm = runtime.block_on(TopicManager::new("/"))?;
+    let mut tm = runtime.block_on(TopicManager::new("/", &dpkg_arch("/")?))?;
     let (style, inv) = oma_spinner(false);
     pb.set_style(style);
     pb.enable_steady_tick(inv);
