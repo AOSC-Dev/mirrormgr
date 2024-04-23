@@ -221,7 +221,7 @@ impl MirrorStatus {
             if self.mirror.len() == 1 {
                 bail!(fl!("no-delete-only-mirror"));
             }
-            self.mirror.remove(mirror);
+            self.mirror.shift_remove(mirror);
             return Ok(true);
         }
 
