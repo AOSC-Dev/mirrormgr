@@ -41,6 +41,7 @@ pub fn execute() -> Result<()> {
             Ok(config) => config,
             Err(err) => {
                 error!("{}", fl!("custom-parse-failed", custom_path = CUSTOM_MIRRORS));
+                info!("{}", fl!("fix-custom-howto"));
                 return Err(eyre!(err));
             }
         }
@@ -55,6 +56,7 @@ pub fn execute() -> Result<()> {
         Ok(config) => config,
         Err(err) => {
             error!("{}", fl!("custom-parse-failed", custom_path = CUSTOM_MIRRORS));
+            info!("{}", fl!("fix-custom-howto"));
             return Err(eyre!(err));
         }
     };
