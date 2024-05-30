@@ -19,6 +19,7 @@ mirror-not-found = Cannot find mirror: {$mirror}. Please use `oma mirror' or `mi
 mirror-already-enabled = The specified mirror {$mirror} is already enabled!
 mirror-already-disabled = The specified mirror {$mirror} is already disabled or does not exist！
 mirror-error = Failed to fetch test data from {$mirror}, please check your network connection!
+custom-parse-failed = Failed to parse custom config: {$custom_path} .
 no-delete-only-mirror = You only have one mirror left, refusing to remove.
 no-delete-only-comp = Refusing to remove essential component "main".
 execute-pkexec-fail = Failed to execute `pkexec': {$e}.

@@ -1,9 +1,9 @@
-use eyre::Result;
+use eyre::{eyre, Result};
 use std::collections::HashMap;
 use std::io::Write;
 use std::process::Command;
 use std::{env, fs, path::Path};
-use tracing::info;
+use tracing::{info, error};
 
 use crate::mgr::{Branches, CustomMirrors, DistroConfig, MirrorManager};
 use crate::utils::{create_status, distro_and_custom_mirrors, refresh};
@@ -37,7 +37,13 @@ pub fn execute() -> Result<()> {
 
         CustomMirrors(HashMap::new())
     } else {
-        DistroConfig::from_file(&f)?
+        match DistroConfig::from_file(&f) {
+            Ok(config) => config,
+            Err(err) => {
+                error!("{}", fl!("custom-parse-failed", custom_path = CUSTOM_MIRRORS));
+                return Err(eyre!(err));
+            }
+        }
     };
 
     drop(f);
@@ -45,7 +51,13 @@ pub fn execute() -> Result<()> {
     let editor = env::var("EDITOR").unwrap_or("nano".to_string());
     Command::new(editor).arg(p).spawn()?.wait()?;
 
-    let custom_map2: CustomMirrors = DistroConfig::from_path(p)?;
+    let custom_map2: CustomMirrors = match DistroConfig::from_path(p) {
+        Ok(config) => config,
+        Err(err) => {
+            error!("{}", fl!("custom-parse-failed", custom_path = CUSTOM_MIRRORS));
+            return Err(eyre!(err));
+        }
+    };
 
     let mut edited_map = HashMap::new();
 
