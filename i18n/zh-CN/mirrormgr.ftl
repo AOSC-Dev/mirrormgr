@@ -9,6 +9,7 @@ run-refresh = 正在刷新镜像源 ...
 activating-count-mirrors = 正在启用 {$count} 个镜像源
 select-open-or-close-mirrors = 选中镜像源以启用或禁用
 help-message = 按 [Space] 或 [Enter] 启用和禁用镜像源，按 [Esc] 应用更改，按 [Ctrl-c] 退出。
+fix-custom-howto = 这一般是由于语法错误造成的，请尝试检查并编辑上列文件。
 
 # error messages
 comp-not-found = 组件 {$comp} 不存在。
@@ -19,6 +20,7 @@ mirror-not-found = 找不到镜像源：{$mirror} 。请使用 `oma mirror' 或 
 mirror-already-enabled = 镜像源 {$mirror} 之前已被启用！
 mirror-already-disabled = 镜像源 {$mirror} 之前已被关闭或不存在 ！
 mirror-error = 无法从 {$mirror} 下载测试数据，请检查你的网络连接！
+custom-parse-failed = 无法解析自定义软件源文件: {$custom_path}
 no-delete-only-mirror = 无法移除唯一启用的镜像源！
 no-delete-only-comp = 不允许删除必要组件 "main" 。
 execute-pkexec-fail = 无法执行 `pkexec' 命令：{$e}。

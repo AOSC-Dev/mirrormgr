@@ -9,6 +9,7 @@ run-refresh = Refreshing local mirror metadata ...
 activating-count-mirrors = Activating {$count} mirrors ...
 select-open-or-close-mirrors = Select to enable or disable mirror(s) ...
 help-message = Press [Space]/[Enter] to toggle selection, [Esc] to apply changes, [Ctrl-c] to abort.
+fix-custom-howto = This is usually caused by syntax errors, please check and manually edit the file listed above.
 
 # error messages
 comp-not-found = The specified component {$comp} does not exist.
@@ -19,6 +20,7 @@ mirror-not-found = Cannot find mirror: {$mirror}. Please use `oma mirror' or `mi
 mirror-already-enabled = The specified mirror {$mirror} is already enabled!
 mirror-already-disabled = The specified mirror {$mirror} is already disabled or does not exist！
 mirror-error = Failed to fetch test data from {$mirror}, please check your network connection!
+custom-parse-failed = Failed to parse custom config: {$custom_path}
 no-delete-only-mirror = You only have one mirror left, refusing to remove.
 no-delete-only-comp = Refusing to remove essential component "main".
 execute-pkexec-fail = Failed to execute `pkexec': {$e}.
