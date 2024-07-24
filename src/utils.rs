@@ -34,7 +34,7 @@ pub fn create_status<P: AsRef<Path>>(status: P) -> Result<File> {
 
 #[cfg(any(feature = "oma-refresh", feature = "oma-refresh-aosc"))]
 pub fn refresh() -> Result<()> {
-    use std::sync::{atomic::Ordering, Arc};
+    use std::{path::PathBuf, sync::{atomic::Ordering, Arc}};
 
     use dashmap::DashMap;
     use indicatif::{MultiProgress, ProgressBar};
@@ -44,7 +44,7 @@ pub fn refresh() -> Result<()> {
         writer::{self, Writer},
     };
     use oma_refresh::{
-        db::{OmaRefreshBuilder, RefreshEvent},
+        db::{OmaRefresh, OmaRefreshBuilder, RefreshEvent},
         DownloadEvent,
     };
     use oma_topics::TopicManager;
@@ -58,7 +58,15 @@ pub fn refresh() -> Result<()> {
 
     let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
 
-    let refresh = OmaRefreshBuilder::default().build()?;
+    let client = reqwest::Client::builder().user_agent("oma").build()?;
+    let refresh: OmaRefresh = OmaRefreshBuilder {
+        source: PathBuf::from("/"),
+        limit: Some(4),
+        arch: dpkg_arch("/")?,
+        download_dir: "/var/lib/apt/lists".into(),
+        download_compress: true,
+        client: &client,
+    }.into();
 
     let pb = mb.add(ProgressBar::new_spinner());
 

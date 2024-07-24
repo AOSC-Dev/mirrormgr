@@ -82,12 +82,6 @@ pub trait DistroConfig: DeserializeOwned {
         Ok(s)
     }
 
-    fn from_str(s: &str) -> Result<Self> {
-        let s = serde_yaml::from_str(s)?;
-
-        Ok(s)
-    }
-
     fn from_file(f: &File) -> Result<Self> {
         let mut f = f;
         let mut buf = vec![];
@@ -113,12 +107,6 @@ impl DistroConfig for MirrorStatus {
         let mut buf = vec![];
         f.read_to_end(&mut buf)?;
         let s = serde_json::from_slice(&buf)?;
-
-        Ok(s)
-    }
-
-    fn from_str(s: &str) -> Result<Self> {
-        let s = serde_json::from_str(s)?;
 
         Ok(s)
     }
