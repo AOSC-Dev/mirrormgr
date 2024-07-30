@@ -76,7 +76,7 @@ pub fn refresh() -> Result<()> {
     pb.enable_steady_tick(inv);
     pb.set_message("Refreshing topics mirror sources file ...");
     runtime.block_on(tm.refresh())?;
-    runtime.block_on(tm.write_enabled(false, || fl!("generated"), true))?;
+    runtime.block_on(tm.write_enabled(false, || fl!("generated")))?;
     pb.finish_and_clear();
 
     runtime.block_on(refresh.start(
