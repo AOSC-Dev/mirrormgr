@@ -23,7 +23,6 @@ oma-console = { version = "0.11", features = ["print", "progress_bar_style"] }
 reqwest = { version = "0.12", features = ["blocking"] }
 tokio = { version = "^1", features = ["rt-multi-thread", "rt", "time"], optional = true }
 oma-refresh = { version = "0.20", optional = true, default-features = false }
-oma-topics = { version = "0.9", optional = true }
 oma-utils = "0.8"
 oma-inquire = "0.1"
 hex = "0.4"
@@ -49,9 +48,9 @@ os-release = "0.1"
 aosc = ["oma-refresh-aosc"]
 retro = ["oma-refresh-aosc"]
 oma-refresh = ["dep:oma-refresh", "dep:tokio", "dep:dashmap"]
-oma-refresh-aosc = ["dep:oma-refresh", "dep:tokio", "dep:dashmap", "oma-refresh/aosc", "dep:oma-topics"]
+oma-refresh-aosc = ["dep:oma-refresh", "dep:tokio", "dep:dashmap", "oma-refresh/aosc"]
 sequoia-openssl-backend = ["oma-refresh/sequoia-openssl-backend"]
 sequoia-nettle-backend = ["oma-refresh/sequoia-nettle-backend"]
-rustls = ["reqwest/rustls-tls", "oma-refresh/rustls", "oma-topics/rustls"]
-openssl = ["reqwest/native-tls", "oma-refresh/native-tls", "oma-topics/native-tls"]
+rustls = ["reqwest/rustls-tls", "oma-refresh/rustls"]
+openssl = ["reqwest/native-tls", "oma-refresh/native-tls"]
 default = ["aosc", "sequoia-nettle-backend", "rustls"]

@@ -1988,7 +1988,6 @@ dependencies = [
  "oma-console",
  "oma-inquire",
  "oma-refresh",
- "oma-topics 0.9.0",
  "oma-utils",
  "once_cell",
  "os-release",
@@ -2246,7 +2245,7 @@ dependencies = [
  "oma-apt-sources-lists",
  "oma-debcontrol",
  "oma-fetch",
- "oma-topics 0.8.1",
+ "oma-topics",
  "oma-utils",
  "sequoia-openpgp",
  "small-map",
@@ -2262,22 +2261,6 @@ name = "oma-topics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a81d0e95f4561d9228db3508877f711447393d40c585e01486a3d9467f67d91b"
-dependencies = [
- "futures",
- "indexmap",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "oma-topics"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f8d882b03abf3566180a5f523564fc83f79f3eec308321e7c95ccd6c4f62d7b"
 dependencies = [
  "futures",
  "indexmap",

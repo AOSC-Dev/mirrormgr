@@ -47,7 +47,6 @@ pub fn refresh() -> Result<()> {
         db::{OmaRefresh, OmaRefreshBuilder, RefreshEvent},
         DownloadEvent,
     };
-    use oma_topics::TopicManager;
     use oma_utils::dpkg::dpkg_arch;
     use std::sync::atomic::AtomicBool;
     use tokio::runtime::Builder;
@@ -70,13 +69,10 @@ pub fn refresh() -> Result<()> {
 
     let pb = mb.add(ProgressBar::new_spinner());
 
-    let mut tm = runtime.block_on(TopicManager::new("/", &dpkg_arch("/")?))?;
     let (style, inv) = oma_spinner(false);
     pb.set_style(style);
     pb.enable_steady_tick(inv);
     pb.set_message("Refreshing topics mirror sources file ...");
-    runtime.block_on(tm.refresh())?;
-    runtime.block_on(tm.write_enabled(false, || fl!("generated")))?;
     pb.finish_and_clear();
 
     runtime.block_on(refresh.start(
