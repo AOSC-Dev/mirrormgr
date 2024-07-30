@@ -1,6 +1,6 @@
 [package]
 name = "mirrormgr"
-version = "0.10.4"
+version = "0.11.0"
 authors = ["eatradish <sakiiily@aosc.io>", "liushuyu <liushuyu@aosc.io>"]
 edition = "2021"
 
