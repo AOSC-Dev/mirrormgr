@@ -1978,7 +1978,7 @@ dependencies = [
 
 [[package]]
 name = "mirrormgr"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "clap",
  "clap_complete",
